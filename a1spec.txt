@@ -1,0 +1,186 @@
+> Assignment 1 - Building a Three Dimensional World
+> -------------------------------------------------
+> Due. January 25, 2019
+> 
+> We are going to recreate the arcade game Defender in 3D.
+> Each assignment in the course will add more features to the game. 
+> This assignment focusses on creating the game world and some objects
+> in the world, as well as adding some motion control for the player.
+> 
+> You can find videos of Defender on youtube by searching for "defender game".
+> 
+> 
+> 1. World Building
+> -----------------
+> Create a three dimensional world from cubes. 
+> 
+> Read an image file and use it to create a three dimensional surface called
+> a height map. The image file contains a 100x100 image. Read the y value
+> (elevation) for each cube from the file. Use the position in the file to
+> indicate the position in the world (x and z values).
+> 
+> Height maps are used to represent complex terrain surfaces but they only
+> store one of the three coordinates for each vertex. Read the height map from
+> a pgm file and store its contents in the world array. Create a model out of
+> cubes using the height and width of the array as the x and z coordinates,
+> use the value read from the image (and stored in the array) as they y
+> coordinate. You will need to scale the y values to make the
+> terrain looks correct.  A zero in the array indicates the minimum height and
+> the largest value in the image (255) indicates the maximum height of
+> the model. This would create y values in the world array from 0 to 255.
+> This is too large as the maximum height in the array is 49. Scale the
+> elevation (y value) so the ground looks reasonable.
+> 
+> The pgm files we are using is monochrome so it will have one value per pixel.
+> The pgm files have the format:
+> 
+> P2
+> width height depth
+> numbers ...
+> 
+> The P2 is a header which indicates a gray scale ASCII file.
+> The height and width are the dimensions of the image. The depth is the maximum
+> value of any of the numbers.
+> 
+> The numbers are the image information. Any type and amount of whitespace can
+> appear between any of the fields in the file. Comments can appear on any
+> line starting with a #.
+> 
+> The input file will be named ground.pgm.
+> 
+> Make sure there are no holes in the ground. You may have to add
+> extra cubes to prevent this from happening.
+> 
+> 
+> 
+> 2. Collision Detection
+> ----------------------
+> Add collision detection so the viewpoint cannot pass into a space
+> which is occupied by a cube. Any world space that is not set equal to 0
+> is occupied.
+> 
+> Test for collisions by checking if the position the viewpoint will move
+> into is an occupied space in the world. Write the collision detection so
+> that the viewpoint does not pass inside a cube at any time. 
+> 
+> The simplest method for collision detection is to test if the next move
+> of the viewpoint will enter an occupied cube. If the cube is occupied
+> then prevent the movement. This can be done using the get and set viewposition
+> functions.
+> 
+> Responding to a collision when it is just about to occur
+> may not always be sufficient. It is possible in some cases
+> for the viewpoint to pass into the edge of a cube and not register as
+> being inside the cube.  This allows the user to see inside the cube
+> when they should not be able to do so. You may need to take into consideration
+> the direction which the viewpoint is moving and predict when it is getting
+> near to the cube instead of it being inside the cube. In this case you
+> are actually looking for the viewpoint being close to an occupied space
+> instead of inside that space.
+> 
+> Add collision detection so the viewpoint cannot move outside the
+> space defined by the world array. The viewpoint should not move to
+> a position less than 0 in any direction. It should not move to a position
+> greater than 99 in the x and z direction, and not greater than 49 in the y
+> direction.
+> 
+> 
+> 3. Gravity
+> ----------
+> Gravity operates like a collision with the ground. If gravity would
+> push an object into an occupied space (cube) then the object should not be
+> be allowed to move there. For example, gravity should push a human towards
+> the ground but it should stop once they reach the ground.
+> 
+> Gravity does not affect the player's viewpoint. It only affects the humans.
+> When a human is dropped then it should fall towards the ground.
+> 
+> Create some sample human models. Humans are created by creating
+> cubes in the world array. They are moved in the game by moving their
+> values in the world array.  Humans are represented as three cubes stacked
+> on top of each other.  The cubes should be different colours. For this
+> assignment try to make their colours match the colours in the original
+> game (green, pink/red, orange from top to bottom). You can use the
+> predefined colours in the game engine or you can create your own using
+> setUserColour().
+> 
+> When the game starts there should be several humans high above the ground and
+> they should drop to the ground and stop when they reach it. Be sure to
+> make it easy for the marker to see the humans and gravity affecting them.
+> 
+> The user should not have to press f for gravity to take effect at the
+> start of the game.
+> 
+> 
+> 4. Viewpoint Motion
+> -------------------
+> By default the system moves in the direction of the w, a, s, or d key
+> when pressed. When one of these keys is not being pressed then the
+> motion stops. 
+> 
+> Add momentum to the movement so that the viewpoint will continue to move
+> in the direction it was previously moving. The momentum should last for
+> at least half a second.  You can use the view position functions to control
+> this behaviour.
+> 
+> 
+> 
+> Choosing Parameters
+> -------------------
+> It is important to pick values for parameters such as colours, speed of
+> objects, the effect of gravity so they are easy for the marker to see.
+> If the effect of a parameter it isn't obvious or is difficult to
+> see then it will be marked as missing or incomplete.
+> 
+> Make sure colours are bright and distinct. Choose velocities that are
+> fast enough to be seen.  
+> 
+> 
+> Coding Practices
+> ----------------
+> Write the code using standard stylistic practices. Use functions, 
+> reasonable variable names, and consistent indentation.
+> If the code is difficult for the TA to understand then you
+> will lose marks.
+> 
+> As usual, keep backups of your work using source control software.
+> 
+> 
+> Starting Code
+> -------------
+> The starting code is available on the Courselink site.
+> You can untar the file using tar xf filename.
+> All of the changes to the code can be made in the a1.c file.
+> 
+> Note that the graphics code may be modified for assignment 2. If you
+> make changes to the graphics code (in graphics.c or visible.c) then you
+> may have to recode the changes in assignment 2.
+> 
+> 
+> 
+> Submitting the Assignment
+> -------------------------
+> Put all of the files in a directory names 4820 so they unpack into
+> this directory.
+> 
+> Submit the assignment using Courselink. Submit only the source code
+> and the makefile. Bundle the code in a tar file.
+> 
+> The assignments will be marked on the Macs in Thorn 2420.
+> If you develop your code on a different platform then it is a good
+> idea to put the include files in an #ifdef for that system
+> so they will still compile on the Macs. Test your program on the
+> Macs before you submit it. 
+> 
+> Include the graphics code with your submission. Include a makefile
+> that will compile the executable. Name the executable a1.
+>  
+> The TA will unpack your code and type "make". They will then try to
+> run an executable named "./a1".  If the make command or executing a1
+> does not work then you will lose a substantial number of marks.
+> 
+> Don't name your program with a .exe extension. If the assignment
+> says name the executable a1 then don't change the name to a1.exe.
+> 
+> It is always a good idea to unpack and test the file you are submitting
+> to be sure that what you submit actually compiles. 

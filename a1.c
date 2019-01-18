@@ -126,11 +126,9 @@ void draw2D() {
          draw2Dbox(500, 380, 524, 388);
       }
    } else {
-
 	/* your code goes here */
 
    }
-
 }
 
 
@@ -296,7 +294,35 @@ int i, j, k;
    } else {
 
 	/* your code to build the world goes here */
+      /* initialize world to empty */
+      for(i=0; i<WORLDX; i++)
+         for(j=0; j<WORLDY; j++)
+            for(k=0; k<WORLDZ; k++)
+               world[i][j][k] = 0;
+      
+      /* blue box shows xy bounds of the world */
+      for(i=0; i<WORLDX-1; i++) {
+         world[i][25][0] = 2;
+         world[i][25][WORLDZ-1] = 2;
+      }
+      for(i=0; i<WORLDZ-1; i++) {
+         world[0][25][i] = 2;
+         world[WORLDX-1][25][i] = 2;
+      }
 
+      // FILE * fp;
+      // fp = fopen("ground.pgm", "r");
+      // if (fp == NULL) printf("File not found");
+      // for (int i=0; i<2; i++) fscanf(fp, "%*[^\n]\n", NULL);
+      // int input;
+      // for (int x=0; x<100; x++) {
+      //       for (int z=0; z<100; z++) {
+      //             fscanf(fp, "%d", &input);
+      //             input /= 10;
+      //             world[x][input][z] = 1;
+      //       }
+      // }
+      }
    }
 
 
