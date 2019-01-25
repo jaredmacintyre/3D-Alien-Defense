@@ -100,6 +100,18 @@ void collisionResponse() {
 
 	/* your code for collisions goes here */
 
+      float newVP[3];
+      getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
+      // printf("%f|%f|%f\n", newVP[0], newVP[1], newVP[2]);
+      float oldVP[3];
+      getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
+
+      // int newVPInt[] = {(int) newVP[0], (int) newVP[1], (int) newVP[2]};
+
+      if (world[abs((int)newVP[0])][abs((int)newVP[1])][abs((int)newVP[2])] > 0) {
+            printf("Collision");
+            setViewPosition(oldVP[0], oldVP[1], oldVP[2]);
+      }
 }
 
 
@@ -129,6 +141,14 @@ void draw2D() {
 	/* your code goes here */
 
    }
+}
+
+/* returns 1 if ViewPositions are equivalent */
+int compareVP (float vp1[3], float vp2[3])  {
+      for (int i=0; i<3; i++) {
+            if (vp1[i] != vp2[i]) return 0;
+      }
+      return 1;
 }
 
 
@@ -208,6 +228,15 @@ float *la;
 
 	/* your code goes here */
 
+      // float newVP[3];
+      // getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
+      // printf("%f|%f|%f\n", newVP[0], newVP[1], newVP[2]);
+      // float oldVP[3];
+      // getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
+      // printf("%f|%f|%f\n", oldVP[0], oldVP[1], oldVP[2]);
+
+      // // check if equal
+      // if (compareVP(oldVP, newVP) == 1) printf("Not moving\n");
    }
 }
 
@@ -294,35 +323,28 @@ int i, j, k;
    } else {
 
 	/* your code to build the world goes here */
+
       /* initialize world to empty */
       for(i=0; i<WORLDX; i++)
          for(j=0; j<WORLDY; j++)
             for(k=0; k<WORLDZ; k++)
                world[i][j][k] = 0;
-      
-      /* blue box shows xy bounds of the world */
-      for(i=0; i<WORLDX-1; i++) {
-         world[i][25][0] = 2;
-         world[i][25][WORLDZ-1] = 2;
-      }
-      for(i=0; i<WORLDZ-1; i++) {
-         world[0][25][i] = 2;
-         world[WORLDX-1][25][i] = 2;
-      }
 
-      // FILE * fp;
-      // fp = fopen("ground.pgm", "r");
-      // if (fp == NULL) printf("File not found");
-      // for (int i=0; i<2; i++) fscanf(fp, "%*[^\n]\n", NULL);
-      // int input;
-      // for (int x=0; x<100; x++) {
-      //       for (int z=0; z<100; z++) {
-      //             fscanf(fp, "%d", &input);
-      //             input /= 10;
-      //             world[x][input][z] = 1;
-      //       }
-      // }
+      /* Build world from ground.ppm */
+      FILE * fp;
+      fp = fopen("ground.pgm", "r");
+      if (fp == NULL) printf("File not found");
+      for (int i=0; i<4; i++) fscanf(fp, "%*[^\n]\n", NULL);
+      int input;
+      for (int x=0; x<100; x++) {
+            for (int z=0; z<100; z++) {
+                  fscanf(fp, "%d", &input);
+                  input /= 50;
+                  for (int y=input; y >= 0; y--)
+                        world[x][y][z] = 1;
+            }
       }
+      fclose(fp);
    }
 
 
