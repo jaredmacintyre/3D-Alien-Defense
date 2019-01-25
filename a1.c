@@ -89,6 +89,16 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 
 /********* end of extern variable declarations **************/
 
+float lastVP[3] = {1.0, 1.0, 1.0};
+float lastMovement[3] = {0.0, 0.0, 0.0};
+
+void printInfo(float vp1[3], float vp2[3], float vp3[3], float vp4[3]) {
+      printf("oldVP[%f][%f][%f]\n", vp1[0], vp1[1], vp1[2]);
+      printf("lastVP[%f][%f][%f]\n", vp2[0], vp2[1], vp2[2]);
+      printf("newVP[%f][%f][%f]\n", vp3[0], vp3[1], vp3[2]);
+      printf("lastMvt[%f][%f][%f]\n", vp4[0], vp4[1], vp4[2]);
+      printf("---------------------------------------------\n");
+}
 
 	/*** collisionResponse() ***/
 	/* -performs collision detection and response */
@@ -109,7 +119,7 @@ void collisionResponse() {
       // int newVPInt[] = {(int) newVP[0], (int) newVP[1], (int) newVP[2]};
 
       if (world[abs((int)newVP[0])][abs((int)newVP[1])][abs((int)newVP[2])] > 0) {
-            printf("Collision");
+            printf("Collision\n");
             setViewPosition(oldVP[0], oldVP[1], oldVP[2]);
       }
 }
@@ -228,15 +238,52 @@ float *la;
 
 	/* your code goes here */
 
-      // float newVP[3];
-      // getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
-      // printf("%f|%f|%f\n", newVP[0], newVP[1], newVP[2]);
-      // float oldVP[3];
-      // getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
-      // printf("%f|%f|%f\n", oldVP[0], oldVP[1], oldVP[2]);
+      float newMovement[3];
+      float vlim = 0.05;
 
-      // // check if equal
-      // if (compareVP(oldVP, newVP) == 1) printf("Not moving\n");
+      float newVP[3];
+      getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
+
+      float oldVP[3];
+      getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
+      for (int i=0; i<3; i++) {
+            // if (oldVP[i] == 0.0) oldVP[i] = -50.0;
+            if (lastVP[i] == 1.0) lastVP[i] = -50.0;
+      }
+
+      printInfo(oldVP, lastVP, newVP, lastMovement); // debug
+
+      // setViewPosition(oldVP[0], oldVP[1], oldVP[2]);
+
+
+      // check if moving
+      if (compareVP(lastVP, newVP) == 1) {
+            // printf("Not moving\n");
+            // NOT MOVING
+            // calculate deceleration amount
+            for (int i=0; i<3; i++) {
+                  newMovement[i] = lastMovement[i] * 0.94; // deceleration factor
+            }
+            // update viewposition
+            setViewPosition(lastVP[0]+newMovement[0], lastVP[1]+newMovement[1], lastVP[2]+newMovement[2]);
+      }
+      else {
+            // MOVING
+            // calculate movement size
+            for (int i=0; i<3; i++) {
+                  newMovement[i] = newVP[i] - lastVP[i];
+                  // set speed limit
+                  if (newMovement[i] > vlim) newMovement[i] = vlim;
+                  if (newMovement[i] < -vlim) newMovement[i] = -vlim;
+            }
+            // update viewposition
+            setViewPosition(lastVP[0]+newMovement[0], lastVP[1]+newMovement[1], lastVP[2]+newMovement[2]);
+      }
+      // store movement size
+      for (int i=0; i<3; i++) {
+            lastMovement[i] = newMovement[i];
+      }
+      getViewPosition(&lastVP[0], &lastVP[1], &lastVP[2]);
    }
 }
 
@@ -339,7 +386,7 @@ int i, j, k;
       for (int x=0; x<100; x++) {
             for (int z=0; z<100; z++) {
                   fscanf(fp, "%d", &input);
-                  input /= 50;
+                  input /= 50; // scale factor
                   for (int y=input; y >= 0; y--)
                         world[x][y][z] = 1;
             }
