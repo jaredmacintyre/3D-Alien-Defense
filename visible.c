@@ -19,6 +19,7 @@ extern GLfloat* getLightPosition();
 
 extern void setViewPosition(float, float, float);
 extern void getViewPosition(float *, float *, float *);
+extern void setOldViewPosition(float, float, float);
 extern void getOldViewPosition(float *, float *, float *);
 extern void getViewOrientation(float *, float *, float *);
 
