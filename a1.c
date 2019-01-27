@@ -91,10 +91,11 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 /********* end of extern variable declarations **************/
 
 #define ACCEL_RATE 2.0 // acceleration rate
-#define DECEL_RATE 0.94 // deceleration rate
-#define VLIM 0.08 // max velocity limit
+#define DECEL_RATE 0.95 // deceleration rate
+#define VLIM 0.1 // max velocity limit
 
 float oldMvt[3] = {0.0, 0.0, 0.0}; // old movement
+int tick = 0; // gravity tick
 
       /*** collisionResponse() ***/
       /* -performs collision detection and response */
@@ -129,15 +130,16 @@ void collisionResponse() {
       }
 
       // add padding to new viewposition
-      float pad = 0.1;
+      float pad = 0.15;
+      float padVP[3];
       for (int i=0; i<3; i++) {
-            if (newVP[i] - oldVP[i] < 0.0) newVP[i] = newVP[i] - pad;
-            else newVP[i] = newVP[i] + pad;
+            if (newVP[i] - oldVP[i] < 0.0) padVP[i] = newVP[i] - pad;
+            else padVP[i] = newVP[i] + pad;
       }
 
       // Collision with item in world[][][]
-      if (world[abs((int)newVP[0])][abs((int)newVP[1])][abs((int)newVP[2])] > 0) {
-            printf("Collision\n");
+      if (world[abs((int)padVP[0])][abs((int)padVP[1])][abs((int)padVP[2])] > 0) {
+            // printf("Collision\n");
             setViewPosition(oldVP[0], oldVP[1], oldVP[2]);
       }
 }
@@ -179,6 +181,11 @@ int compareVP (float vp1[3], float vp2[3])  {
       return 1;
 }
 
+float limit (float vec) {
+      if (vec > VLIM) return VLIM;
+      else if (vec < -VLIM) return -VLIM;
+      else return vec;
+}
 
 	/*** update() ***/
 	/* background process, it is called when there are no other events */
@@ -270,32 +277,33 @@ float *la;
             }
       }
 
-      printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
-      printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
-      printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
+      // printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
+      // printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
+      // printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
 
       // check if moving
       if (compareVP(oldVP, newVP) == 1) {
             // NOT MOVING
-            printf("Not moving\n");
+            // printf("Not moving\n");
             // calculate deceleration amount
             for (int i=0; i<3; i++) {
                   newMvt[i] = oldMvt[i] * DECEL_RATE; // deceleration factor
+                  // set speed limit
+                  // newMvt[i] = limit(newMvt[i]);
             }
             // update viewposition
             setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
       }
       else {
             // MOVING
-            printf("Moving\n");
+            // printf("Moving\n");
             // calculate acceleration amount
             for (int i=0; i<3; i++) {
                   newMvt[i] = newVP[i] - oldVP[i];
                   // newMvt[i] = (newVP[i] - oldVP[i]) / 30; // scale factor
                   // newMvt[i] = newMvt[i] * ACCEL_RATE;
                   // set speed limit
-                  // if (newMvt[i] > VLIM) newMvt[i] = VLIM;
-                  // else if (newMvt[i] < -VLIM) newMvt[i] = -VLIM;
+                  // newMvt[i] = limit(newMvt[i]);
             }
             // update viewposition
             setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
@@ -311,10 +319,27 @@ float *la;
       getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
       setOldViewPosition(newVP[0], newVP[1], newVP[2]);
 
-      printf("oldVP2[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
-      printf("newVP2[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
-      printf("---------------------------------------------\n");    // debug
+      // printf("oldVP2[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
+      // printf("newVP2[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
+      // printf("---------------------------------------------\n");    // debug
 
+      // gravity
+      if (tick < 15) tick++;
+      else tick = 0;
+      if (tick != 0) return;
+
+      for(int x=0; x<WORLDX; x++) {
+         for(int y=0; y<WORLDY; y++) {
+            for(int z=0; z<WORLDZ; z++) {
+                  if (world[x][y][z] == 7 && world[x][y-1][z] != 9) {
+                        world[x][y-1][z] = 7;
+                        world[x][y][z] = 3;
+                        world[x][y+1][z] = 1;
+                        world[x][y+2][z] = 0;
+                  }
+            }
+         }
+      }
    }
 }
 
@@ -341,6 +366,11 @@ void mouse(int button, int state, int x, int y) {
    printf("%d %d\n", x, y);
 }
 
+void createHuman(int number, int x, int y, int z) {
+      world[x][y][z] = 7;
+      world[x][y+1][z] = 3;
+      world[x][y+2][z] = 1;
+}
 
 
 int main(int argc, char** argv)
@@ -399,9 +429,9 @@ int i, j, k;
 	/* create sample player */
       createPlayer(0, 52.0, 27.0, 52.0, 0.0);
    } else {
-
 	/* your code to build the world goes here */
-
+      setUserColour(9, 0.7, 0.3, 0.7, 1.0, 0.3, 0.15, 0.3, 1.0);
+      setUserColour(10, 0.5, 0.5, 0.5, 1.0, 0.2, 0.2, 0.2, 1.0);
       /* initialize world to empty */
       for(i=0; i<WORLDX; i++)
          for(j=0; j<WORLDY; j++)
@@ -419,10 +449,18 @@ int i, j, k;
                   fscanf(fp, "%d", &input);
                   input /= 30; // scale factor
                   for (int y=input; y >= 0; y--)
-                        world[x][y][z] = 1;
+                        world[x][y][z] = 9;
             }
       }
       fclose(fp);
+
+      /* create sample humans */
+      createHuman(0, 10, 40, 90);
+      createHuman(1, 60, 46, 40);
+      createHuman(2, 25, 44, 73);
+      createHuman(3, 80, 40, 35);
+      createHuman(4, 72, 48, 56);
+      createHuman(5, 38, 36, 10);
    }
 
 
