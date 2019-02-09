@@ -96,7 +96,7 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 
 /********* end of extern variable declarations **************/
 
-#define ACCEL_RATE 2.0 // acceleration rate
+#define ACCEL_RATE 1.1 // acceleration rate
 #define DECEL_RATE 0.95 // deceleration rate
 #define VLIM 0.1 // max velocity limit
 
@@ -393,7 +393,7 @@ float x, y, z;
             }
       }
 
-      // printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
+      printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
       // printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
       // printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
 
@@ -415,7 +415,15 @@ float x, y, z;
             // printf("Moving\n");
             // calculate acceleration amount
             for (int i=0; i<3; i++) {
-                  newMvt[i] = newVP[i] - oldVP[i];
+                  // if (newVP[i] - oldVP[i] < oldMvt[i] * ACCEL_RATE)
+                  //       newMvt[i] = newVP[i] - oldVP[i]);
+                  // else
+                  //       newMvt[i] = oldMvt[i] * ACCEL_RATE;
+                  if (fabs(oldMvt[i]) < 0.001)
+                        newMvt[i] = (newVP[i] - oldVP[i]) * 0.4;
+                  else 
+                        newMvt[i] = oldMvt[i] * ACCEL_RATE;
+
                   // newMvt[i] = (newVP[i] - oldVP[i]) / 30; // scale factor
                   // newMvt[i] = newMvt[i] * ACCEL_RATE;
                   // set speed limit
@@ -495,7 +503,7 @@ void mouse(int button, int state, int x, int y) {
       // printf("------------\n");
 
       /* creates blue beam */
-      for (int i=0; i<5; i++) {
+      for (int i=0; i<8; i++) {
             createTube(i+1, 
             start[0] + i*dir[0], 
             start[1] + i*dir[1], 
@@ -506,7 +514,7 @@ void mouse(int button, int state, int x, int y) {
             2);
       }
       // beam collision
-      for (int i=0; i<5; i++) {
+      for (int i=0; i<8; i++) {
             float end[3];
             getTubeEnd(i, &end[0], &end[1], &end[2]);
             if (world[(int)end[0]][(int)end[1]][(int)end[2]] == 1 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 3 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 7) {
