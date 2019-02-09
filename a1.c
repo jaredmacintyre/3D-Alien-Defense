@@ -48,6 +48,12 @@ extern void setPlayerPosition(int, float, float, float, float);
 extern void hidePlayer(int);
 extern void showPlayer(int);
 
+	/* tube controls */
+extern void createTube(int, float, float, float, float, float, float, int);
+extern void getTubeEnd(int, float *, float *, float *);
+extern void hideTube(int);
+extern void showTube(int);
+
 	/* 2D drawing functions */
 extern void  draw2Dline(int, int, int, int, int);
 extern void  draw2Dbox(int, int, int, int);
@@ -96,6 +102,7 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 
 float oldMvt[3] = {0.0, 0.0, 0.0}; // old movement
 int tick = 0; // gravity tick
+int first = 1;
 
       /*** collisionResponse() ***/
       /* -performs collision detection and response */
@@ -169,7 +176,105 @@ void draw2D() {
       }
    } else {
 	/* your code goes here */
+      GLfloat pink[] = {1.0, 0.3, 0.5, 1.5};
+      GLfloat black[] = {0.0, 0.0, 0.0, 0.7};
+      GLfloat green[] = {0.0, 0.5, 0.0, 1.5};
+      GLfloat red[] = {1.0, 0.0, 0.0, 1.5};
 
+      if (displayMap == 1) {
+            // Small Map
+            float scale = screenHeight*screenWidth*0.00025;
+            float x1 = screenWidth-scale;
+            float y1 = screenHeight-0.02*scale;
+            float x2 = screenWidth-0.02*scale;
+            float y2 = screenHeight-scale;
+            float mWidth = x2-x1;
+            float mHeight = y1-y2;
+            int humanCount = 0;
+
+            // printf("outline: (%f,%f,%f,%f)\n",x1,y1,x2,y2);
+            // printf("map: (%f,%f)\n",mWidth,mHeight);
+            // human icons
+            for(int x=0; x<WORLDX; x++) {
+                  for(int y=0; y<WORLDY; y++) {
+                        for(int z=0; z<WORLDZ; z++) {
+                              if (world[x][y][z] == 1) {
+                                    // Human
+                                    float px = ((float) x / (float) WORLDX) * mWidth;
+                                    float pz = ((float) z / (float) WORLDZ) * mHeight;
+                                    // printf("pxpz: (%f,%f)\n",px,pz);
+                                    set2Dcolour(green);
+                                    draw2Dbox(x1+px+0.01*scale, y2+pz-0.01*scale, x1+px-0.01*scale, y2+pz+0.01*scale);
+                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
+                                    humanCount++;
+                                    break;
+                              }
+                              else {
+
+                              }
+                        }
+                  }
+            }
+            // player icon
+            float oldVP[3]; // old viewposition
+            getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
+
+            float px = (fabs(oldVP[0]) / (float) WORLDX) * mWidth;
+            float pz = (fabs(oldVP[2])/ (float) WORLDZ) * mHeight;
+            // printf("pxpz: (%f,%f)\n",px,pz);
+            set2Dcolour(red);
+            draw2Dbox(x1+px+0.01*scale, y2+pz-0.01*scale, x1+px-0.01*scale, y2+pz+0.01*scale);
+            // background
+            set2Dcolour(black);
+            draw2Dbox(x1, y1, x2, y2);
+      }
+      if (displayMap == 2) {
+            // Small Map
+            float scale = screenHeight*screenWidth*0.0002;
+            float x1 = screenWidth/2 + scale*1.3;
+            float y1 = screenHeight/2 - scale*1.3;
+            float x2 = screenWidth/2 - scale*1.3;
+            float y2 = screenHeight/2 + scale*1.3;
+            float mWidth = x2-x1;
+            float mHeight = y1-y2;
+            int humanCount = 0;
+
+            // printf("outline: (%f,%f,%f,%f)\n",x1,y1,x2,y2);
+            // printf("map: (%f,%f)\n",mWidth,mHeight);
+            // human icons
+            for(int x=0; x<WORLDX; x++) {
+                  for(int y=0; y<WORLDY; y++) {
+                        for(int z=0; z<WORLDZ; z++) {
+                              if (world[x][y][z] == 1) {
+                                    // Human
+                                    float px = ((float) x / (float) WORLDX) * mWidth;
+                                    float pz = ((float) z / (float) WORLDZ) * mHeight;
+                                    // printf("pxpz: (%f,%f)\n",px,pz);
+                                    set2Dcolour(green);
+                                    draw2Dbox(x1+px+0.03*scale, y2+pz-0.03*scale, x1+px-0.03*scale, y2+pz+0.03*scale);
+                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
+                                    humanCount++;
+                                    break;
+                              }
+                              else {
+
+                              }
+                        }
+                  }
+            }
+            // player icon
+            float oldVP[3]; // old viewposition
+            getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
+
+            float px = (fabs(oldVP[0]) / (float) WORLDX) * mWidth;
+            float pz = (fabs(oldVP[2])/ (float) WORLDZ) * mHeight;
+            // printf("pxpz: (%f,%f)\n",px,pz);
+            set2Dcolour(red);
+            draw2Dbox(x1+px+0.04*scale, y2+pz-0.04*scale, x1+px-0.04*scale, y2+pz+0.04*scale);
+            // background
+            set2Dcolour(black);
+            draw2Dbox(x1, y1, x2, y2);
+      }
    }
 }
 
@@ -195,10 +300,18 @@ float limit (float vec) {
 void update() {
 int i, j, k;
 float *la;
+float x, y, z;
 
 	/* sample animation for the test world, don't remove this code */
 	/* demo of animating mobs */
    if (testWorld) {
+
+
+	/* update old position so it contains the correct value */
+	/* -otherwise view position is only correct after a key is */
+	/*  pressed and keyboard() executes. */
+      getViewPosition(&x, &y, &z);
+      setOldViewPosition(x,y,z);
 
 	/* sample of rotation and positioning of mob */
 	/* coordinates for mob 0 */
@@ -256,8 +369,11 @@ float *la;
       if (offset <= 0.0) colourCount = 1;
       setUserColour(9, 0.7, 0.3 + offset, 0.7, 1.0, 0.3, 0.15 + offset, 0.3, 1.0);
 
-    /* end testworld animation */
+	/* sample tube creation  */
+	/* draws a purple tube above the other sample objects */
+       createTube(1, 45.0, 30.0, 45.0, 50.0, 30.0, 50.0, 6);
 
+    /* end testworld animation */
 
    } else {
 	/* your code goes here */
@@ -351,19 +467,64 @@ float *la;
 	/*  released */ 
 void mouse(int button, int state, int x, int y) {
 
-   if (button == GLUT_LEFT_BUTTON)
-      printf("left button - ");
+   if (button == GLUT_LEFT_BUTTON) {
+      // printf("left button - ");
+      float VO[3];
+      getViewOrientation(&VO[0], &VO[1], &VO[2]);  
+      for (int i=0; i<3; i++) {
+            VO[i] = fmod(VO[i], 360);
+      }
+      // printf("ViewOrientation (%f, %f, %f)\n", VO[0], VO[1], VO[2]);
+      float dir[3];
+      float val = M_PI / 180.0;
+      dir[0] = sin(VO[1] * val);
+      dir[1] = -sin(VO[0] * val);
+      dir[2] = -cos(VO[1] * val);
+      // printf("ViewRadians (%f, %f)\n", VO[0] * val, VO[1] * val);
+      // printf("ViewDirection (%f, %f, %f)\n", dir[0], dir[1], dir[2]);
+      float start[3]; // start of beam
+      getViewPosition(&start[0], &start[1], &start[2]);
+      for (int i=0; i<3; i++) start[i] = fabs(start[i]);
+
+      // float end[3]; // end of beam
+      // for (int i=0; i<3; i++) end[i] = start[i] + 4*dir[i];
+      // printf("------------\n");
+      // printf("start (%f, %f, %f)\n", start[0], start[1], start[2]);
+      // printf("dir (%f, %f, %f)\n", dir[0], dir[1], dir[2]);
+      // printf("end (%f, %f, %f)\n", end[0], end[1], end[2]);
+      // printf("------------\n");
+
+      /* creates blue beam */
+      for (int i=0; i<5; i++) {
+            createTube(i+1, 
+            start[0] + i*dir[0], 
+            start[1] + i*dir[1], 
+            start[2] + i*dir[2], 
+            start[0] + (i+1)*dir[0], 
+            start[1] + (i+1)*dir[1], 
+            start[2] + (i+1)*dir[2], 
+            2);
+      }
+      // beam collision
+      for (int i=0; i<5; i++) {
+            float end[3];
+            getTubeEnd(i, &end[0], &end[1], &end[2]);
+            if (world[(int)end[0]][(int)end[1]][(int)end[2]] == 1 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 3 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 7) {
+                  printf("Beam Collision with Human\n");
+            }
+      }
+   }
    else if (button == GLUT_MIDDLE_BUTTON)
       printf("middle button - ");   
    else
       printf("right button - ");
 
-   if (state == GLUT_UP)
-      printf("up - ");
-   else
-      printf("down - ");
+//    if (state == GLUT_UP)
+//       printf("up - ");
+//    else
+//       printf("down - ");
 
-   printf("%d %d\n", x, y);
+//    printf("%d %d\n", x, y);
 }
 
 void createHuman(int number, int x, int y, int z) {

@@ -102,7 +102,7 @@ int setUserColour(int id, GLfloat ambRed, GLfloat ambGreen, GLfloat ambBlue,
   GLfloat ambAlpha, GLfloat difRed, GLfloat difGreen, GLfloat difBlue,
   GLfloat difAlpha);
 where:
-   id is the number to which the colour is aloocated. It must be
+   id is the number to which the colour is alocated. It must be
       9 and 99. This is also the value that must be stored in the 
       world array.
    ambRed, ambGreen, ambBlue, ambAlpha are the RGBA values for the ambient
@@ -133,7 +133,7 @@ void getUserColour(int id, GLfloat *ambRed, GLfloat *ambGreen, GLfloat *ambBlue,
 
 where the RGBA values for the ambient and diffuse colours are returned
 for the colour with id number that is passed to the function. Note that this
-function only works for user defined colours and the RGBA values for coloursi
+function only works for user defined colours and the RGBA values for colours
 0 to 9 will not be returned.
 
 
@@ -154,6 +154,11 @@ void setViewPosition(float x, float y, float z);
 -Sets the position where the viewpoint will move to on the next step.
 -Numbers taken from the world array need to be made negative before they
  are used with setViewPosition.
+
+void setOldViewPosition(float x, float y, float z);
+-Sets the position where the viewpoint is currently.
+-Numbers taken from the world array need to be made negative before they
+ are used with setOldViewPosition.
 
 void getOldViewPosition(float *x, float *y, float *z);
 -Returns the position where the viewpoint is currently.
@@ -194,7 +199,7 @@ When it is not otherwise drawing the scene the system will call the
 update() function. This is where you can make changes to the world
 array and lighting while program is running.
 
-If you make changes to the world or the light in the udpate()
+If you make changes to the world or the light in the update()
 function then you may need to call glutPostRedisplay() to refresh the screen.
 
 The update() function is not called on a predictable schedule. You will
@@ -405,6 +410,29 @@ To see the effect of a change through setLightPosition() you will
 need to call glutPostRedisplay() to update the screen. 
 
 
+17 Drawing Tubes (actually crossed quadrilaterals)
+--------------------------------------------------
+These functions let you draw tube shapes.  
+
+void createTube(int number, float sx, float sy, float sz,
+        float ex, float ey, float ez, int colour);
+-Creates a tube with the starting position at sx,sy,sz and and ending
+ position at ex, ey, ez.
+-Colour is set using the int colour.  These objects can use predefined
+ colours (1-8) or used defined colours (9+).
+-number is the identifier for this tube. Used to either change the parameters
+ of the object or with the show and hide functions.
+-Call the function again with different parameters to animate the tube.
+-The tube will initially be visible.
+
+void hideTube(int number);
+-Stops drawing the tube. It remains in memory and can be drawn again if
+ using showTube().
+-number is the identifier of the tube.
+
+void showTube(int number);
+-Restart drawing the tube. Used only after hideTube() stops drawing. 
+-number is the identifier of the tube.
 
 
 Appendix A - Culling Objects that Cannot Be Seen

@@ -19,7 +19,6 @@ extern GLfloat* getLightPosition();
 
 extern void setViewPosition(float, float, float);
 extern void getViewPosition(float *, float *, float *);
-extern void setOldViewPosition(float, float, float);
 extern void getOldViewPosition(float *, float *, float *);
 extern void getViewOrientation(float *, float *, float *);
 
@@ -75,11 +74,12 @@ void cross(float x1, float y1, float z1, float x2, float y2, float z2,
 }
 
 	/* returns radians */
-void dot (float x1, float y1, float z1, float x2, float y2, float z2) {
+float dot (float x1, float y1, float z1, float x2, float y2, float z2) {
 float result;
    result = (x1 * x2) + (y1 * y2) + (z1 * z2);
    result /= (lengthVector(x1, y1, z1) * lengthVector(x2, y2, z2));
    result = acosf(result);
+   return(result);
 }
 
 	/* the next two function use Cramer's rule to find the intersection */
