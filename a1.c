@@ -601,7 +601,7 @@ void mouse(int button, int state, int x, int y) {
             2);
       }
       // beam collision
-      for (int i=0; i<8; i++) {
+      for (int i=1; i<=8; i++) {
             float end[3];
             getTubeEnd(i, &end[0], &end[1], &end[2]);
             if (world[(int)end[0]][(int)end[1]][(int)end[2]] == 1 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 3 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 7) {
