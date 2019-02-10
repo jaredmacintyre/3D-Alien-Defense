@@ -100,9 +100,9 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 
 /********* end of extern variable declarations **************/
 
-#define ACCEL_RATE 1.1 // acceleration rate
-#define DECEL_RATE 0.95 // deceleration rate
-#define VLIM 0.1 // max velocity limit
+#define ACCEL_RATE 1.15 // acceleration rate
+#define DECEL_RATE 0.9 // deceleration rate
+#define VLIM 0.2 // max velocity limit
 
 struct timeval oldTime;
 int updateTime = -1;
@@ -352,10 +352,27 @@ int compareVP (float vp1[3], float vp2[3])  {
       return 1;
 }
 
-float limit (float vec) {
-      if (vec > VLIM) return VLIM;
-      else if (vec < -VLIM) return -VLIM;
-      else return vec;
+void limit (float *x, float *y, float *z) {
+      printf("origi : [%.4f][%.4f][%.4f]\n", *x, *y, *z);
+      float magnitude = sqrtf( powf(*x,2) + powf(*y,2) + powf(*z,2) );
+      if (magnitude < VLIM) return;
+
+      float yrate = *y / fabs(*x);
+      float zrate = *z / fabs(*x);
+      if (x > 0) *x = VLIM / sqrtf( 1 + powf(*y / *x,2) + powf(*z / *x,2) );
+      else *x = -VLIM / sqrtf( 1 + powf(*y / *x,2) + powf(*z / *x,2) );
+      *y = *x * yrate;
+      *z = *x * zrate;
+      printf("limit : [%.4f][%.4f][%.4f]\n", *x, *y, *z);
+}
+
+void speedlimit (float *x, float *y, float *z) {
+      if (*x > VLIM) *x = VLIM;
+      if (*x < -VLIM) *x = -VLIM;
+      if (*y > VLIM) *y = VLIM;
+      if (*y < -VLIM) *y = -VLIM;
+      if (*z > VLIM) *z = VLIM;
+      if (*z < -VLIM) *z = -VLIM;
 }
 
 	/*** update() ***/
@@ -481,18 +498,16 @@ float x, y, z;
       }
 
       // printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
-      // printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
-      // printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
+      printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
+      printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
 
       // check if moving
       if (compareVP(oldVP, newVP) == 1) {
             // NOT MOVING
-            // printf("Not moving\n");
+            printf("Not moving\n");
             // calculate deceleration amount
             for (int i=0; i<3; i++) {
                   newMvt[i] = oldMvt[i] * DECEL_RATE; // deceleration factor
-                  // set speed limit
-                  // newMvt[i] = limit(newMvt[i]);
             }
             // calculate 
             // update viewposition
@@ -500,26 +515,32 @@ float x, y, z;
       }
       else {
             // MOVING
-            // printf("Moving\n");
+            printf("Moving\n");
             // calculate acceleration amount
             for (int i=0; i<3; i++) {
-                  newMvt[i] = (newVP[i] - oldVP[i]) * 0.07 + (oldMvt[i] * ACCEL_RATE);
+                  // newMvt[i] = (newVP[i] - oldVP[i]);
+                  if (oldMvt[i] == 0.0)
+                        newMvt[i] = (newVP[i] - oldVP[i]) * 0.05;
+                  else
+                        newMvt[i] = (newVP[i] - oldVP[i]) * 0.05 + (oldMvt[i] * ACCEL_RATE);
+                  // newMvt[i] = (newVP[i] - oldVP[i]) * 0.05 + (oldMvt[i] * ACCEL_RATE);
             }
+            // limit(&newMvt[0], &newMvt[1], &newMvt[2]);
+            // printf("newMvt[%f][%f][%f]\n", newMvt[0], newMvt[1], newMvt[2]); // debug
             // update viewposition
             setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
+            // update oldviewposition
+            getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
+            setOldViewPosition(newVP[0], newVP[1], newVP[2]);
       }
       // store movement size
       for (int i=0; i<3; i++) {
             oldMvt[i] = newMvt[i];
-            if (fabs(oldMvt[i]) < 0.000001) oldMvt[i] = 0.0;
+            if (fabs(oldMvt[i]) < 0.00000001) oldMvt[i] = 0.0;
             
       }
 
       collisionResponse();
-
-      // update oldviewposition
-      getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
-      setOldViewPosition(newVP[0], newVP[1], newVP[2]);
 
       // printf("oldVP2[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
       // printf("newVP2[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
