@@ -29,6 +29,8 @@ int lighting = 1;	// use diffuse and specular lighting
 int smoothShading = 1;  // smooth or flat shading
 int textures = 0;
 
+int moving = 0;
+
 	/* texture data */
 GLubyte  Image[64][64][4];
 GLuint   textureID[1];
@@ -109,8 +111,6 @@ void  draw2Dtriangle(int, int, int, int, int, int);
 void  set2Dcolour(float []);
 
 /***************/
-
-
 
 	/* player control functions */
 	/* set all player location, rotation, and visibility values to zero */
@@ -693,6 +693,10 @@ void reshape(int w, int h)
 
 }
 
+void isMoving(int *var) {
+      *var = moving;
+}
+
 	/* respond to keyboard events */
 void keyboard(unsigned char key, int x, int y)
 {
@@ -811,6 +815,14 @@ static int lighton = 1;
             fixedVP = 0;
          break;
    }
+      // if (key == 'w' || key == 'a' || key == 's' || key == 'd') {
+      //       moving = 1;
+      //       printf("moving: %c\n", key);
+      // }
+      // else {
+      //       moving = 0;
+      //       printf("Not moving\n");
+      // }
 }
 
 	/* load a texture from a file */

@@ -54,7 +54,7 @@ extern void showPlayer(int);
 extern void createTube(int, float, float, float, float, float, float, int);
 extern void getTubeStart(int, float *, float *, float *);
 extern void getTubeEnd(int, float *, float *, float *);
-extern void isTubeVisible(int, int*);
+extern void isTubeVisible(int, int *);
 extern void hideTube(int);
 extern void showTube(int);
 
@@ -63,6 +63,8 @@ extern void  draw2Dline(int, int, int, int, int);
 extern void  draw2Dbox(int, int, int, int);
 extern void  draw2Dtriangle(int, int, int, int, int, int);
 extern void  set2Dcolour(float []);
+
+extern void isMoving(int *);
 
 
 	/* flag which is set to 1 when flying behaviour is desired */
@@ -205,30 +207,15 @@ void draw2D() {
 
             // printf("outline: (%f,%f,%f,%f)\n",x1,y1,x2,y2);
             // printf("map: (%f,%f)\n",mWidth,mHeight);
-            // human icons
-            for(int x=0; x<WORLDX; x++) {
-                  for(int y=0; y<WORLDY; y++) {
-                        for(int z=0; z<WORLDZ; z++) {
-                              if (world[x][y][z] == 1) {
-                                    // Human
-                                    float px = ((float) x / (float) WORLDX) * mWidth;
-                                    float pz = ((float) z / (float) WORLDZ) * mHeight;
-                                    // printf("pxpz: (%f,%f)\n",px,pz);
-                                    set2Dcolour(green);
-                                    draw2Dbox(x1+px+0.01*scale, y2+pz-0.01*scale, x1+px-0.01*scale, y2+pz+0.01*scale);
-                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
-                                    humanCount++;
-                                    break;
-                              }
-                        }
-                  }
-            }
+            
             // player icon
             float oldVP[3]; // old viewposition
             getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
 
-            float px = (fabs(oldVP[0]) / (float) WORLDX) * mWidth;
-            float pz = (fabs(oldVP[2])/ (float) WORLDZ) * mHeight;
+            float px = (( (float) WORLDX - fabs(oldVP[0]) ) / (float) WORLDX) * mWidth;
+            // float pz = (( (float) WORLDZ - fabs(oldVP[2]) ) / (float) WORLDZ) * mHeight;
+            // float px = (( fabs(oldVP[0]) ) / (float) WORLDX) * mWidth;
+            float pz = (( fabs(oldVP[2]) ) / (float) WORLDZ) * mHeight;
             float player[2] = { x1+px , y2+pz };
             float ax, ay, bx, by, cx, cy;
             cx = player[0];
@@ -252,16 +239,37 @@ void draw2D() {
                         getTubeStart(i, &bx, &by, &bz);
                         getTubeEnd(i, &ex, &ey, &ez);
                         // scale to map
-                        float mstartx = (bx / (float) WORLDX) * mWidth;
+                        float mstartx = (((float) WORLDX - bx) / (float) WORLDX) * mWidth;
                         float mstarty = (bz / (float) WORLDZ) * mHeight;
-                        float mendx = (ex / (float) WORLDX) * mWidth;
+                        float mendx = (((float) WORLDX - ex)  / (float) WORLDX) * mWidth;
                         float mendy = (ez / (float) WORLDZ) * mHeight;
+                        // printf("beam\nstart:[%f][%f]\nend:[%f][%f]\n", x1+mstartx, y2+mstarty, x1+mendx, y2+mendy);
                         // draw
                         set2Dcolour(blue);
                         draw2Dline(x1+mstartx, y2+mstarty, x1+mendx, y2+mendy, (int)(scale*0.02));
                   }
             }
-
+            
+            // human icons
+            for(int x=0; x<WORLDX; x++) {
+                  for(int y=0; y<WORLDY; y++) {
+                        for(int z=0; z<WORLDZ; z++) {
+                              if (world[x][y][z] == 1) {
+                                    // Human
+                                    float px = ((float) (WORLDX-x) / (float) WORLDX) * mWidth;
+                                    // float pz = ((float) (WORLDZ-z) / (float) WORLDZ) * mHeight;
+                                    // float px = ((float) (x) / (float) WORLDX) * mWidth;
+                                    float pz = ((float) (z) / (float) WORLDZ) * mHeight;
+                                    // printf("pxpz: (%f,%f)\n",px,pz);
+                                    set2Dcolour(green);
+                                    draw2Dbox(x1+px+0.01*scale, y2+pz-0.01*scale, x1+px-0.01*scale, y2+pz+0.01*scale);
+                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
+                                    humanCount++;
+                                    break;
+                              }
+                        }
+                  }
+            }
             // background
             set2Dcolour(black);
             draw2Dbox(x1, y1, x2, y2);
@@ -279,30 +287,15 @@ void draw2D() {
 
             // printf("outline: (%f,%f,%f,%f)\n",x1,y1,x2,y2);
             // printf("map: (%f,%f)\n",mWidth,mHeight);
-            // human icons
-            for(int x=0; x<WORLDX; x++) {
-                  for(int y=0; y<WORLDY; y++) {
-                        for(int z=0; z<WORLDZ; z++) {
-                              if (world[x][y][z] == 1) {
-                                    // Human
-                                    float px = ((float) x / (float) WORLDX) * mWidth;
-                                    float pz = ((float) z / (float) WORLDZ) * mHeight;
-                                    // printf("pxpz: (%f,%f)\n",px,pz);
-                                    set2Dcolour(green);
-                                    draw2Dbox(x1+px+0.03*scale, y2+pz-0.03*scale, x1+px-0.03*scale, y2+pz+0.03*scale);
-                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
-                                    humanCount++;
-                                    break;
-                              }
-                        }
-                  }
-            }
+            
             // player icon
             float oldVP[3]; // old viewposition
             getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
 
-            float px = (fabs(oldVP[0]) / (float) WORLDX) * mWidth;
-            float pz = (fabs(oldVP[2])/ (float) WORLDZ) * mHeight;
+            float px = (( (float) WORLDX - fabs(oldVP[0]) ) / (float) WORLDX) * mWidth;
+            // float pz = (( (float) WORLDZ - fabs(oldVP[2]) ) / (float) WORLDZ) * mHeight;
+            // float px = (( fabs(oldVP[0]) ) / (float) WORLDX) * mWidth;
+            float pz = (( fabs(oldVP[2]) ) / (float) WORLDZ) * mHeight;
             float player[2] = { x1+px , y2+pz };
             float ax, ay, bx, by, cx, cy;
             cx = player[0];
@@ -327,13 +320,34 @@ void draw2D() {
                         getTubeStart(i, &bx, &by, &bz);
                         getTubeEnd(i, &ex, &ey, &ez);
                         // scale to map
-                        float mstartx = (bx / (float) WORLDX) * mWidth;
+                        float mstartx = (((float) WORLDX - bx) / (float) WORLDX) * mWidth;
                         float mstarty = (bz / (float) WORLDZ) * mHeight;
-                        float mendx = (ex / (float) WORLDX) * mWidth;
+                        float mendx = (((float) WORLDX - ex)  / (float) WORLDX) * mWidth;
                         float mendy = (ez / (float) WORLDZ) * mHeight;
                         // draw
                         set2Dcolour(blue);
                         draw2Dline(x1+mstartx, y2+mstarty, x1+mendx, y2+mendy, (int)(scale*0.04));
+                  }
+            }
+
+            // human icons
+            for(int x=0; x<WORLDX; x++) {
+                  for(int y=0; y<WORLDY; y++) {
+                        for(int z=0; z<WORLDZ; z++) {
+                              if (world[x][y][z] == 1) {
+                                    // Human
+                                    float px = ((float) (WORLDX-x) / (float) WORLDX) * mWidth;
+                                    // float pz = ((float) (WORLDZ-z) / (float) WORLDZ) * mHeight;
+                                    // float px = ((float) (x) / (float) WORLDX) * mWidth;
+                                    float pz = ((float) (z) / (float) WORLDZ) * mHeight;
+                                    // printf("pxpz: (%f,%f)\n",px,pz);
+                                    set2Dcolour(green);
+                                    draw2Dbox(x1+px+0.03*scale, y2+pz-0.03*scale, x1+px-0.03*scale, y2+pz+0.03*scale);
+                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
+                                    humanCount++;
+                                    break;
+                              }
+                        }
                   }
             }
 
@@ -498,40 +512,47 @@ float x, y, z;
       }
 
       // printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
-      printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
-      printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
+      // printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
+      // printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
 
       // check if moving
-      if (compareVP(oldVP, newVP) == 1) {
+      int moving;
+      isMoving(&moving);
+     
+      if (compareVP(newVP, oldVP) == 1) {
             // NOT MOVING
-            printf("Not moving\n");
+            // printf("Not moving\n");
             // calculate deceleration amount
             for (int i=0; i<3; i++) {
                   newMvt[i] = oldMvt[i] * DECEL_RATE; // deceleration factor
+                  // newMvt[i] = oldMvt[i];
             }
             // calculate 
+            // update oldviewposition
+            getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
+            setOldViewPosition(newVP[0], newVP[1], newVP[2]);
             // update viewposition
             setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
       }
       else {
             // MOVING
-            printf("Moving\n");
+            // printf("Moving\n");
             // calculate acceleration amount
             for (int i=0; i<3; i++) {
-                  // newMvt[i] = (newVP[i] - oldVP[i]);
-                  if (oldMvt[i] == 0.0)
-                        newMvt[i] = (newVP[i] - oldVP[i]) * 0.05;
-                  else
-                        newMvt[i] = (newVP[i] - oldVP[i]) * 0.05 + (oldMvt[i] * ACCEL_RATE);
+                  newMvt[i] = (newVP[i] - oldVP[i]);
+                  // if (oldMvt[i] == 0.0)
+                  //       newMvt[i] = (newVP[i] - oldVP[i]) * 0.05;
+                  // else
+                  //       newMvt[i] = (newVP[i] - oldVP[i]) * 0.05 + (oldMvt[i] * ACCEL_RATE);
                   // newMvt[i] = (newVP[i] - oldVP[i]) * 0.05 + (oldMvt[i] * ACCEL_RATE);
             }
-            // limit(&newMvt[0], &newMvt[1], &newMvt[2]);
+            // speedlimit(&newMvt[0], &newMvt[1], &newMvt[2]);
             // printf("newMvt[%f][%f][%f]\n", newMvt[0], newMvt[1], newMvt[2]); // debug
-            // update viewposition
-            setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
             // update oldviewposition
             getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
             setOldViewPosition(newVP[0], newVP[1], newVP[2]);
+            // update viewposition
+            setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
       }
       // store movement size
       for (int i=0; i<3; i++) {
@@ -542,6 +563,8 @@ float x, y, z;
 
       collisionResponse();
 
+      getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
+      getOldViewPosition(&newVP[0], &newVP[1], &newVP[2]);
       // printf("oldVP2[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
       // printf("newVP2[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
       // printf("---------------------------------------------\n");    // debug
