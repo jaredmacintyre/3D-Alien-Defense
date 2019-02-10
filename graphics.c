@@ -30,6 +30,7 @@ int smoothShading = 1;  // smooth or flat shading
 int textures = 0;
 
 int moving = 0;
+char dir= ' ';
 
 	/* texture data */
 GLubyte  Image[64][64][4];
@@ -697,6 +698,10 @@ void isMoving(int *var) {
       *var = moving;
 }
 
+void getCurrentDirection(char *ch) {
+      *ch = dir;
+}
+
 	/* respond to keyboard events */
 void keyboard(unsigned char key, int x, int y)
 {
@@ -761,6 +766,8 @@ static int lighton = 1;
          vpz += cos(roty) * 0.3;
 	 collisionResponse();
          glutPostRedisplay();
+         moving = 1;
+         dir = 'w';
          break;
       case 's':		// backward motion
          oldvpx = vpx;
@@ -775,6 +782,8 @@ static int lighton = 1;
          vpz -= cos(roty) * 0.3;
 	 collisionResponse();
          glutPostRedisplay();
+         moving = 1;
+         dir = 's';
          break;
       case 'a':		// strafe left motion
          oldvpx = vpx;
@@ -785,6 +794,8 @@ static int lighton = 1;
          vpz += sin(roty) * 0.3;
 	 collisionResponse();
          glutPostRedisplay();
+         moving = 1;
+         dir = 'a';
          break;
       case 'd':		// strafe right motion
          oldvpx = vpx;
@@ -795,6 +806,8 @@ static int lighton = 1;
          vpz -= sin(roty) * 0.3;
 	 collisionResponse();
          glutPostRedisplay();
+         moving = 1;
+         dir = 'd';
          break;
       case 'f':		// toggle flying controls
          if (flycontrol == 0) flycontrol = 1;
@@ -815,15 +828,18 @@ static int lighton = 1;
             fixedVP = 0;
          break;
    }
-      // if (key == 'w' || key == 'a' || key == 's' || key == 'd') {
-      //       moving = 1;
-      //       printf("moving: %c\n", key);
-      // }
-      // else {
-      //       moving = 0;
-      //       printf("Not moving\n");
-      // }
 }
+
+ void keyboard_up(unsigned char key, int x, int y) {
+      switch (key) {
+            case 'w':
+            case 'a':
+            case 's':
+            case 'd':
+                  moving = 0;
+                  dir = ' ';
+      }
+ }
 
 	/* load a texture from a file */
 	/* not currently used */
@@ -926,6 +942,7 @@ int i, fullscreen;
    glutReshapeFunc (reshape);
    glutDisplayFunc(display);
    glutKeyboardFunc (keyboard);
+      glutKeyboardUpFunc(keyboard_up);
    glutPassiveMotionFunc(passivemotion);
    glutMotionFunc(motion);
    glutMouseFunc(mouse);

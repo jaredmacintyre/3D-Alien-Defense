@@ -65,6 +65,7 @@ extern void  draw2Dtriangle(int, int, int, int, int, int);
 extern void  set2Dcolour(float []);
 
 extern void isMoving(int *);
+extern void getCurrentDirection(char *);
 
 
 	/* flag which is set to 1 when flying behaviour is desired */
@@ -104,7 +105,7 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 
 #define ACCEL_RATE 1.15 // acceleration rate
 #define DECEL_RATE 0.9 // deceleration rate
-#define VLIM 0.2 // max velocity limit
+#define VLIM 0.3 // max velocity limit
 
 struct timeval oldTime;
 int updateTime = -1;
@@ -113,6 +114,8 @@ float oldMvt[3] = {0.0, 0.0, 0.0}; // old movement
 int beamTick = 0; // beam tick
 int tick = 0; // gravity tick
 int first = 1;
+float accel = 0.0;
+int direction = ' ';
 
       /*** collisionResponse() ***/
       /* -performs collision detection and response */
@@ -370,13 +373,26 @@ void limit (float *x, float *y, float *z) {
       printf("origi : [%.4f][%.4f][%.4f]\n", *x, *y, *z);
       float magnitude = sqrtf( powf(*x,2) + powf(*y,2) + powf(*z,2) );
       if (magnitude < VLIM) return;
-
-      float yrate = *y / fabs(*x);
-      float zrate = *z / fabs(*x);
-      if (x > 0) *x = VLIM / sqrtf( 1 + powf(*y / *x,2) + powf(*z / *x,2) );
-      else *x = -VLIM / sqrtf( 1 + powf(*y / *x,2) + powf(*z / *x,2) );
-      *y = *x * yrate;
-      *z = *x * zrate;
+      if (*x == 0.0) {
+            if (*y == 0.0) {
+                  if (*z > 0.0) *z = VLIM;
+                  else *z = -VLIM ;
+            }
+            else {
+                  float zrate = *z / fabs(*y);
+                  if (*y > 0.0) *y = VLIM / sqrtf( 1 + powf(*z / *y,2) );
+                  else *y = -VLIM / sqrtf( 1 + powf(*z / *y,2) );
+                  *z = *y * zrate;
+            }
+      }
+      else {
+            float yrate = *y / fabs(*x);
+            float zrate = *z / fabs(*x);
+            if (*x > 0.0) *x = VLIM / sqrtf( 1 + powf(*y / *x,2) + powf(*z / *x,2) );
+            else *x = -VLIM / sqrtf( 1 + powf(*y / *x,2) + powf(*z / *x,2) );
+            *y = *x * yrate;
+            *z = *x * zrate;
+      }
       printf("limit : [%.4f][%.4f][%.4f]\n", *x, *y, *z);
 }
 
@@ -511,7 +527,7 @@ float x, y, z;
             }
       }
 
-      // printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
+      // printf("DEBUG\n");
       // printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
       // printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
 
@@ -519,49 +535,70 @@ float x, y, z;
       int moving;
       isMoving(&moving);
      
-      if (compareVP(newVP, oldVP) == 1) {
+      if (moving == 0) {
             // NOT MOVING
             // printf("Not moving\n");
             // calculate deceleration amount
             for (int i=0; i<3; i++) {
                   newMvt[i] = oldMvt[i] * DECEL_RATE; // deceleration factor
-                  // newMvt[i] = oldMvt[i];
             }
             // calculate 
-            // update oldviewposition
-            getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
-            setOldViewPosition(newVP[0], newVP[1], newVP[2]);
-            // update viewposition
-            setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
+            accel = 0.1;
       }
       else {
             // MOVING
             // printf("Moving\n");
+            char newD;
+            getCurrentDirection(&newD);
+      
             // calculate acceleration amount
             for (int i=0; i<3; i++) {
-                  newMvt[i] = (newVP[i] - oldVP[i]);
-                  // if (oldMvt[i] == 0.0)
-                  //       newMvt[i] = (newVP[i] - oldVP[i]) * 0.05;
-                  // else
-                  //       newMvt[i] = (newVP[i] - oldVP[i]) * 0.05 + (oldMvt[i] * ACCEL_RATE);
+                  if (compareVP(newVP, oldVP) == 1) {
+                        newMvt[i] = oldMvt[i];
+                  }
+                  else {
+                        newMvt[i] = (newVP[i] - oldVP[i]) * 0.8;
+                        // if (oldMvt[i] == 0.0 || newD != direction) {
+                        //       newMvt[i] = (newVP[i] - oldVP[i]) * 0.2;
+                        // }
+                        // else {
+                        //       accel *= ACCEL_RATE;
+                        //       newMvt[i] = (newVP[i] - oldVP[i]) * accel;
+                        // }
+                              
+                  }
                   // newMvt[i] = (newVP[i] - oldVP[i]) * 0.05 + (oldMvt[i] * ACCEL_RATE);
             }
-            // speedlimit(&newMvt[0], &newMvt[1], &newMvt[2]);
-            // printf("newMvt[%f][%f][%f]\n", newMvt[0], newMvt[1], newMvt[2]); // debug
-            // update oldviewposition
-            getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
-            setOldViewPosition(newVP[0], newVP[1], newVP[2]);
-            // update viewposition
-            setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
+
+            if (newD != direction) {
+                  direction = newD;
+            }
       }
+
+      // limit(&newMvt[0], &newMvt[1], &newMvt[2]);
+
+      // printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
+      // printf("newMvt[%f][%f][%f]\n", newMvt[0], newMvt[1], newMvt[2]); // debug
+
       // store movement size
       for (int i=0; i<3; i++) {
             oldMvt[i] = newMvt[i];
-            if (fabs(oldMvt[i]) < 0.00000001) oldMvt[i] = 0.0;
+            if (fabs(oldMvt[i]) < 0.0000001) oldMvt[i] = 0.0;
             
       }
 
+      // update oldviewposition
+      getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
+      setOldViewPosition(newVP[0], newVP[1], newVP[2]);
+
+      // update viewposition
+      setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
+
       collisionResponse();
+
+      // update oldviewposition
+      getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
+      setOldViewPosition(newVP[0], newVP[1], newVP[2]);
 
       getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
       getOldViewPosition(&newVP[0], &newVP[1], &newVP[2]);
