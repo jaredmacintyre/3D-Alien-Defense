@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "graphics.h"
 
@@ -50,7 +52,9 @@ extern void showPlayer(int);
 
 	/* tube controls */
 extern void createTube(int, float, float, float, float, float, float, int);
+extern void getTubeStart(int, float *, float *, float *);
 extern void getTubeEnd(int, float *, float *, float *);
+extern void isTubeVisible(int, int*);
 extern void hideTube(int);
 extern void showTube(int);
 
@@ -100,7 +104,11 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 #define DECEL_RATE 0.95 // deceleration rate
 #define VLIM 0.1 // max velocity limit
 
+struct timeval oldTime;
+int updateTime = -1;
+
 float oldMvt[3] = {0.0, 0.0, 0.0}; // old movement
+int beamTick = 0; // beam tick
 int tick = 0; // gravity tick
 int first = 1;
 
@@ -165,7 +173,7 @@ void draw2D() {
    if (testWorld) {
 		/* draw some sample 2d shapes */
       if (displayMap == 1) {
-         GLfloat green[] = {0.0, 0.5, 0.0, 0.5};
+         GLfloat green[] = {0.0, 0.5, 0.0,0.5};
          set2Dcolour(green);
          draw2Dline(0, 0, 500, 500, 15);
          draw2Dtriangle(0, 0, 200, 200, 0, 200);
@@ -180,6 +188,9 @@ void draw2D() {
       GLfloat black[] = {0.0, 0.0, 0.0, 0.7};
       GLfloat green[] = {0.0, 0.5, 0.0, 1.5};
       GLfloat red[] = {1.0, 0.0, 0.0, 1.5};
+      GLfloat blue[] = {0.0, 0.0, 1.0, 1.5};
+
+      if (displayMap == 0) return;
 
       if (displayMap == 1) {
             // Small Map
@@ -209,9 +220,6 @@ void draw2D() {
                                     humanCount++;
                                     break;
                               }
-                              else {
-
-                              }
                         }
                   }
             }
@@ -221,9 +229,39 @@ void draw2D() {
 
             float px = (fabs(oldVP[0]) / (float) WORLDX) * mWidth;
             float pz = (fabs(oldVP[2])/ (float) WORLDZ) * mHeight;
-            // printf("pxpz: (%f,%f)\n",px,pz);
+            float player[2] = { x1+px , y2+pz };
+            float ax, ay, bx, by, cx, cy;
+            cx = player[0];
+            cy = player[1] + 0.03 * scale;
+            bx = player[0] - 0.03 * scale;
+            by = player[1] - 0.03 * scale;
+            ax = player[0] + 0.03 * scale;
+            ay = player[1] - 0.03 * scale;
+            // printf("triangle\na:[%f][%f]\nb: [%f][%f]\nc: [%f][%f]\n", ax, ay, bx, by, cx, cy);
             set2Dcolour(red);
-            draw2Dbox(x1+px+0.01*scale, y2+pz-0.01*scale, x1+px-0.01*scale, y2+pz+0.01*scale);
+            // draw2Dbox(x1+px+0.04*scale, y2+pz-0.04*scale, x1+px-0.04*scale, y2+pz+0.04*scale);
+            draw2Dtriangle(ax, ay, bx, by, cx, cy);
+
+            // beam (ray)
+            for (int i=1; i<=8; i++) {
+                  int visible;
+                  isTubeVisible(i, &visible);
+                  if (visible == 1) {
+                        // get tube coordinates
+                        float bx, by, bz, ex, ey, ez;
+                        getTubeStart(i, &bx, &by, &bz);
+                        getTubeEnd(i, &ex, &ey, &ez);
+                        // scale to map
+                        float mstartx = (bx / (float) WORLDX) * mWidth;
+                        float mstarty = (bz / (float) WORLDZ) * mHeight;
+                        float mendx = (ex / (float) WORLDX) * mWidth;
+                        float mendy = (ez / (float) WORLDZ) * mHeight;
+                        // draw
+                        set2Dcolour(blue);
+                        draw2Dline(x1+mstartx, y2+mstarty, x1+mendx, y2+mendy, (int)(scale*0.02));
+                  }
+            }
+
             // background
             set2Dcolour(black);
             draw2Dbox(x1, y1, x2, y2);
@@ -256,9 +294,6 @@ void draw2D() {
                                     humanCount++;
                                     break;
                               }
-                              else {
-
-                              }
                         }
                   }
             }
@@ -268,9 +303,40 @@ void draw2D() {
 
             float px = (fabs(oldVP[0]) / (float) WORLDX) * mWidth;
             float pz = (fabs(oldVP[2])/ (float) WORLDZ) * mHeight;
-            // printf("pxpz: (%f,%f)\n",px,pz);
+            float player[2] = { x1+px , y2+pz };
+            float ax, ay, bx, by, cx, cy;
+            cx = player[0];
+            cy = player[1] + 0.06 * scale;
+            bx = player[0] - 0.06 * scale;
+            by = player[1] - 0.06 * scale;
+            ax = player[0] + 0.06 * scale;
+            ay = player[1] - 0.06 * scale;
+            // printf("scale %f", scale);
+            // printf("triangle\na:[%f][%f]\nb: [%f][%f]\nc: [%f][%f]\n", ax, ay, bx, by, cx, cy);
             set2Dcolour(red);
-            draw2Dbox(x1+px+0.04*scale, y2+pz-0.04*scale, x1+px-0.04*scale, y2+pz+0.04*scale);
+            // draw2Dbox(x1+px+0.04*scale, y2+pz-0.04*scale, x1+px-0.04*scale, y2+pz+0.04*scale);
+            draw2Dtriangle(ax, ay, bx, by, cx, cy);
+
+            // beam (ray)
+            for (int i=1; i<=8; i++) {
+                  int visible;
+                  isTubeVisible(i, &visible);
+                  if (visible == 1) {
+                        // get tube coordinates
+                        float bx, by, bz, ex, ey, ez;
+                        getTubeStart(i, &bx, &by, &bz);
+                        getTubeEnd(i, &ex, &ey, &ez);
+                        // scale to map
+                        float mstartx = (bx / (float) WORLDX) * mWidth;
+                        float mstarty = (bz / (float) WORLDZ) * mHeight;
+                        float mendx = (ex / (float) WORLDX) * mWidth;
+                        float mendy = (ez / (float) WORLDZ) * mHeight;
+                        // draw
+                        set2Dcolour(blue);
+                        draw2Dline(x1+mstartx, y2+mstarty, x1+mendx, y2+mendy, (int)(scale*0.04));
+                  }
+            }
+
             // background
             set2Dcolour(black);
             draw2Dbox(x1, y1, x2, y2);
@@ -378,6 +444,27 @@ float x, y, z;
    } else {
 	/* your code goes here */
 
+      //////////////// TIMING ////////////////
+      struct timeval newTime;
+      gettimeofday(&newTime, NULL);
+
+      if (updateTime != -1) {
+            unsigned long diff = (newTime.tv_sec - oldTime.tv_sec) * 1000000 + (newTime.tv_usec - oldTime.tv_usec);
+            // printf("%ld microseconds\n", diff);
+
+            // Only run if last update over 16000 milliseconds
+            if (diff > 16000) {
+                  // printf("update()\n");
+                  oldTime = newTime;
+            }
+            else return;
+      }
+      else oldTime = newTime;
+
+      updateTime = 0;
+
+      
+
       float newMvt[3]; // new movement
 
       float newVP[3]; // new viewposition
@@ -393,7 +480,7 @@ float x, y, z;
             }
       }
 
-      printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
+      // printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
       // printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
       // printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
 
@@ -407,6 +494,7 @@ float x, y, z;
                   // set speed limit
                   // newMvt[i] = limit(newMvt[i]);
             }
+            // calculate 
             // update viewposition
             setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
       }
@@ -415,19 +503,7 @@ float x, y, z;
             // printf("Moving\n");
             // calculate acceleration amount
             for (int i=0; i<3; i++) {
-                  // if (newVP[i] - oldVP[i] < oldMvt[i] * ACCEL_RATE)
-                  //       newMvt[i] = newVP[i] - oldVP[i]);
-                  // else
-                  //       newMvt[i] = oldMvt[i] * ACCEL_RATE;
-                  if (fabs(oldMvt[i]) < 0.001)
-                        newMvt[i] = (newVP[i] - oldVP[i]) * 0.4;
-                  else 
-                        newMvt[i] = oldMvt[i] * ACCEL_RATE;
-
-                  // newMvt[i] = (newVP[i] - oldVP[i]) / 30; // scale factor
-                  // newMvt[i] = newMvt[i] * ACCEL_RATE;
-                  // set speed limit
-                  // newMvt[i] = limit(newMvt[i]);
+                  newMvt[i] = (newVP[i] - oldVP[i]) * 0.07 + (oldMvt[i] * ACCEL_RATE);
             }
             // update viewposition
             setViewPosition(oldVP[0]+newMvt[0], oldVP[1]+newMvt[1], oldVP[2]+newMvt[2]);
@@ -435,6 +511,8 @@ float x, y, z;
       // store movement size
       for (int i=0; i<3; i++) {
             oldMvt[i] = newMvt[i];
+            if (fabs(oldMvt[i]) < 0.000001) oldMvt[i] = 0.0;
+            
       }
 
       collisionResponse();
@@ -463,6 +541,15 @@ float x, y, z;
                   }
             }
          }
+      }
+
+      // beam
+      if (beamTick > 0) {
+            beamTick--;
+            if (beamTick == 0) {
+                  for (int i=1; i<=8; i++)
+                        hideTube(i);
+            }
       }
    }
 }
@@ -518,14 +605,15 @@ void mouse(int button, int state, int x, int y) {
             float end[3];
             getTubeEnd(i, &end[0], &end[1], &end[2]);
             if (world[(int)end[0]][(int)end[1]][(int)end[2]] == 1 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 3 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 7) {
-                  printf("Beam Collision with Human\n");
+                  if (state == GLUT_UP) printf("Beam Collision with Human\n");
             }
       }
+      beamTick = 8;
    }
-   else if (button == GLUT_MIDDLE_BUTTON)
-      printf("middle button - ");   
-   else
-      printf("right button - ");
+//    else if (button == GLUT_MIDDLE_BUTTON)
+//       printf("middle button - ");   
+//    else
+//       printf("right button - ");
 
 //    if (state == GLUT_UP)
 //       printf("up - ");

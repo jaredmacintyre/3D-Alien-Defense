@@ -249,10 +249,20 @@ void createTube(int number, float bx, float by, float bz,
    tubeVisible[number] = 1;
 }
 
+void getTubeStart(int number, float *bx, float *by, float *bz) {
+      *bx = tubeData[number][0];
+      *by = tubeData[number][1];
+      *bz = tubeData[number][2];
+}
+
 void getTubeEnd(int number, float *ex, float *ey, float *ez) {
       *ex = tubeData[number][3];
       *ey = tubeData[number][4];
       *ez = tubeData[number][5];
+}
+
+void isTubeVisible(int number, int *visible) {
+      *visible = tubeVisible[number];
 }
 
 	/* turn off drawing for tube number */
