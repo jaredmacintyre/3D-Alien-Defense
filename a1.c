@@ -322,12 +322,12 @@ void draw2D() {
             draw2Dbox(x1, y1, x2, y2);
       }
       if (displayMap == 2) {
-            // Small Map
+            // Large Map
             float scale = screenHeight*screenWidth*0.0002;
-            float x1 = screenWidth/2 + scale*1.3;
-            float y1 = screenHeight/2 - scale*1.3;
-            float x2 = screenWidth/2 - scale*1.3;
-            float y2 = screenHeight/2 + scale*1.3;
+            float x1 = screenWidth/2 - scale*1.3;
+            float y1 = screenHeight/2 + scale*1.3;
+            float x2 = screenWidth/2 + scale*1.3;
+            float y2 = screenHeight/2 - scale*1.3;
             float mWidth = x2-x1;
             float mHeight = y1-y2;
             int humanCount = 0;
@@ -899,7 +899,7 @@ float x, y, z;
                   }
                   // calculate fall damage
                   else if (human[i].dead != 1 && world[human[i].x][human[i].y-1][human[i].z] == 9) {
-                        if (human[i].fall > 15) {
+                        if (human[i].fall > 20) {
                               // kill human
                               printf("Human was lost\n");
                               // set alien to SEARCH
