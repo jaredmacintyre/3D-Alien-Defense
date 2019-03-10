@@ -543,6 +543,10 @@ void alienControl () {
                               if (40.0 - alien[i].y > 0.2) alien[i].y += 0.15;
                               else alien[i].y = 40.0;
                         }
+                        else if (alien[i].y > 40.0) {
+                              if (alien[i].y - 40.0 > 0.2) alien[i].y -= 0.15;
+                              else alien[i].y = 40.0;
+                        }
                         else {
                               alien[i].x  += alien[i].vecx;
                               alien[i].z  += alien[i].vecz;
@@ -660,7 +664,7 @@ void alienControl () {
                         world[(int) alien[i].x][(int) alien[i].y-2][(int) alien[i].z] = 0;
                         world[(int) alien[i].x][(int) alien[i].y-3][(int) alien[i].z] = 0;
                         world[(int) alien[i].x][(int) alien[i].y-4][(int) alien[i].z] = 0;
-                        printf("Alien escaped\n");
+                        // printf("Alien escaped\n");
                         printf("Human was lost\n");
                         human[alien[i].target].targeted = -1;
                         human[alien[i].target].dead = 1;
@@ -986,6 +990,7 @@ void mouse(int button, int state, int x, int y) {
                               if (fabs(end[0] - alien[j].x) < 2 && fabs(end[1] - alien[j].y) < 2 && fabs(end[2] - alien[j].z) < 2) 
                                     alien[j].state = DEAD;
                         }
+                        break;
                   }
             }
             // beam collision with HUMAN
@@ -1008,6 +1013,7 @@ void mouse(int button, int state, int x, int y) {
                                     human[j].dead = 1;
                               }
                         }
+                        break;
                   }
             }
       }
