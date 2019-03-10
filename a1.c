@@ -535,8 +535,8 @@ void alienControl () {
                   }
                   case SEARCH: {
                         // switch direction at edge of world
-                        if (alien[i].x + alien[i].vecx > 90.0 || alien[i].x + alien[i].vecx < 10.0) alien[i].vecx = -(alien[i].vecx);
-                        if (alien[i].z + alien[i].vecz > 90.0 || alien[i].z + alien[i].vecz < 10.0) alien[i].vecz = -(alien[i].vecz);
+                        if (alien[i].x + alien[i].vecx > 97.0 || alien[i].x + alien[i].vecx < 2.0) alien[i].vecx = -(alien[i].vecx);
+                        if (alien[i].z + alien[i].vecz > 97.0 || alien[i].z + alien[i].vecz < 2.0) alien[i].vecz = -(alien[i].vecz);
                         // move alien
                         clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
                         if (alien[i].y < 40.0) {
@@ -566,7 +566,7 @@ void alienControl () {
                                                 }
                                                 break;
                                           }
-                                          else if (world[(int) alien[i].x + j][y][(int) alien[i].z - k] == 1) {
+                                          if (world[(int) alien[i].x + j][y][(int) alien[i].z - k] == 1) {
                                                 int newTarget[3] = { (int) alien[i].x + j, y, (int) alien[i].z - k };
                                                 for (int n=0; n<6; n++) {
                                                       if (newTarget[0] == human[n].x && newTarget[2] == human[n].z) {
@@ -579,7 +579,7 @@ void alienControl () {
                                                 }
                                                 break;
                                           }
-                                          else if (world[(int) alien[i].x - j][y][(int) alien[i].z + k] == 1) {
+                                          if (world[(int) alien[i].x - j][y][(int) alien[i].z + k] == 1) {
                                                 int newTarget[3] = { (int) alien[i].x - j, y, (int) alien[i].z + k };
                                                 for (int n=0; n<6; n++) {
                                                       if (newTarget[0] == human[n].x && newTarget[2] == human[n].z) {
@@ -592,7 +592,7 @@ void alienControl () {
                                                 }
                                                 break;
                                           }
-                                          else if (world[(int) alien[i].x - j][y][(int) alien[i].z - k] == 1){
+                                          if (world[(int) alien[i].x - j][y][(int) alien[i].z - k] == 1){
                                                 int newTarget[3] = { (int) alien[i].x - j, y, (int) alien[i].z - k };
                                                 for (int n=0; n<6; n++) {
                                                       if (newTarget[0] == human[n].x && newTarget[2] == human[n].z) {
@@ -660,6 +660,7 @@ void alienControl () {
                         world[(int) alien[i].x][(int) alien[i].y-2][(int) alien[i].z] = 0;
                         world[(int) alien[i].x][(int) alien[i].y-3][(int) alien[i].z] = 0;
                         world[(int) alien[i].x][(int) alien[i].y-4][(int) alien[i].z] = 0;
+                        printf("Alien escaped\n");
                         printf("Human was lost\n");
                         human[alien[i].target].targeted = -1;
                         human[alien[i].target].dead = 1;
@@ -882,18 +883,6 @@ float x, y, z;
       if (tick < 15) tick++;
       else tick = 0;
       if (tick == 0) {
-            // for(int x=0; x<WORLDX; x++) {
-            //       for(int y=0; y<WORLDY; y++) {
-            //             for(int z=0; z<WORLDZ; z++) {
-            //                   if (world[x][y][z] == 7 && world[x][y-1][z] != 9 && world[x][y+5][z] != 12) {
-            //                         world[x][y-1][z] = 7;
-            //                         world[x][y][z] = 3;
-            //                         world[x][y+1][z] = 1;
-            //                         world[x][y+2][z] = 0;
-            //                   }
-            //             }
-            //       }
-            // }
             for (int i=0; i<6; i++) {
                   // apply gravity
                   if (human[i].targeted < 0 && human[i].dead != 1 && world[human[i].x][human[i].y-1][human[i].z] != 9) {
@@ -984,10 +973,11 @@ void mouse(int button, int state, int x, int y) {
             start[2] + (i+1)*dir[2], 
             2);
       }
-      // beam collision with ALIEN
+      // beam collision
       for (int i=1; i<=8; i++) {
             float end[3];
             getTubeEnd(i, &end[0], &end[1], &end[2]);
+            // beam collision with ALIEN
             if (world[(int)end[0]][(int)end[1]][(int)end[2]] == 11 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 12) {
                   if (state == GLUT_UP) {
                         printf("Alien killed\n");
@@ -1014,23 +1004,10 @@ void mouse(int button, int state, int x, int y) {
                                           if (world[human[j].x][y][human[j].z] == 1 || world[human[j].x][y][human[j].z] == 3 || world[human[j].x][y][human[j].z] == 7)
                                                 world[human[j].x][y][human[j].z] = 0;
                                     }
-                                    // world[human[j].x][human[j].y][human[j].x] = 0;
-                                    // world[human[j].x][human[j].y+1][human[j].z] = 0;
-                                    // world[human[j].x][human[j].y+2][human[j].z] = 0;
                                     human[j].targeted = -1;
                                     human[j].dead = 1;
                               }
                         }
-                        // for (int y=0; y<50; y++) {
-                        //       if (world[(int)end[0]][y][(int)end[2]] == 1 || world[(int)end[0]][y][(int)end[2]] == 3 || world[(int)end[0]][y][(int)end[2]] == 7)
-                        //             world[(int)end[0]][y][(int)end[2]] = 0;
-                        // }
-                        
-                        // for (int j=0; j<3; j++) {
-                        //       // printf("-------\nBeamx: %f\nAlienx: %f\n-------\n", end[0], alien[j].x); // DEBUG
-                        //       if (fabs(end[0] - alien[j].x) < 2 && fabs(end[1] + 3.0 - alien[j].y) < 2 && fabs(end[2] - alien[j].z) < 2 && alien[j].state != DEAD) 
-                        //             alien[j].state = SEARCH;
-                        // }
                   }
             }
       }
