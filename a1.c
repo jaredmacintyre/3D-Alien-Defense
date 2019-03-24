@@ -106,6 +106,10 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 #define ACCEL_RATE 1.15 // acceleration rate
 #define DECEL_RATE 0.9 // deceleration rate
 #define VLIM 0.3 // max velocity limit
+#define ALIEN_MAX 8 // number of aliens
+#define HUMAN_MAX 8
+#define BEAM_MAX 15
+#define AVOID_MAX 12
 
 struct timeval oldTime;
 int updateTime = -1;
@@ -116,10 +120,11 @@ int tick = 0; // gravity tick
 int first = 1;
 float accel = 0.0;
 int direction = ' ';
-enum { INIT, SEARCH, MOVEDOWN, MOVEUP, SUCCESS, DEAD , END};
+enum { INIT, SEARCH, MOVEDOWN, MOVEUP, SUCCESS, DEAD , END, AVOID, GROUND };
 
 typedef struct Alien {
       int state;
+      int previous, avoidCount;
       float x,y,z;
       float vecx, vecz;
       int target;
@@ -133,8 +138,8 @@ typedef struct Human {
       int fall;
 } Human;
 
-Alien alien[3];
-Human human[6];
+Alien alien[ALIEN_MAX];
+Human human[HUMAN_MAX];
 
       /*** collisionResponse() ***/
       /* -performs collision detection and response */
@@ -514,9 +519,52 @@ void drawAlien(int x, int y, int z) {
       world[x-1][y-1][z+1] = 11;
 }
 
+void alienCollision(int a) {
+      for (int i=-3; i<=3; i++) {
+            for (int j=-3; j<=3; j++) {
+                  for (int k=-3; k<=3; k++) {
+                        for (int l=0; l<ALIEN_MAX; l++) {
+                              // if (i == 0 && j == 0 && ) continue;
+                              if (l == a) continue;
+                              if ((int) alien[a].x + i == (int) alien[l].x && (int) alien[a].y + j == (int) alien[l].y && (int) alien[a].z + k == (int) alien[l].z) {
+                                    if (alien[a].state != AVOID) alien[a].previous = alien[a].state;
+                                    alien[a].state = AVOID;
+                                    alien[a].avoidCount = AVOID_MAX;
+                                    return;
+                              }
+                        }
+                  }
+            }
+      }
+      return;
+}
+
+void groundCollision(int a) {
+      for (int i=-3; i<=3; i++) {
+            for (int j=-3; j<=3; j++) {
+                  for (int k=-3; k<=3; k++) {
+                        if (world[(int) alien[a].x + i][(int) alien[a].y + j][(int) alien[a].z + k] == 9) {
+                              alien[a].state = GROUND;
+                              alien[a].avoidCount = AVOID_MAX;
+                              return;
+                        }
+                  }
+            }
+      }
+      return;
+}
+
 /* Alien State Machine */
 void alienControl () {
-      for (int i=0; i<3; i++) {
+      // alien collision check
+      for (int i=0; i<ALIEN_MAX; i++) {
+            if (alien[i].state == SEARCH || alien[i].state == MOVEDOWN || alien[i].state == MOVEUP)
+                  if (alien[i].avoidCount == 0)  
+                        alienCollision(i);
+      }
+      // ground collision check
+      // state machine
+      for (int i=0; i<ALIEN_MAX; i++) {
             switch (alien[i].state) {
                   case INIT: {
                         // generate init position
@@ -531,6 +579,8 @@ void alienControl () {
                         alien[i].target = -1;
                         // start searching
                         alien[i].state = SEARCH;
+                        // avoid animation counter
+                        alien[i].avoidCount = 0;
                         break;
                   }
                   case SEARCH: {
@@ -559,52 +609,56 @@ void alienControl () {
                                           if (world[(int) alien[i].x + j][y][(int) alien[i].z + k] == 1) {
                                                 // check if targeted
                                                 int newTarget[3] = { (int) alien[i].x + j, y, (int) alien[i].z + k };
-                                                for (int n=0; n<6; n++) {
+                                                for (int n=0; n<HUMAN_MAX; n++) {
                                                       if (newTarget[0] == human[n].x && newTarget[2] == human[n].z) {
                                                             if (human[n].targeted < 0){
                                                                   alien[i].target = n;
                                                                   alien[i].state = MOVEDOWN;
                                                                   human[n].targeted = i;
                                                             }
+                                                            break;
                                                       }
                                                 }
                                                 break;
                                           }
                                           if (world[(int) alien[i].x + j][y][(int) alien[i].z - k] == 1) {
                                                 int newTarget[3] = { (int) alien[i].x + j, y, (int) alien[i].z - k };
-                                                for (int n=0; n<6; n++) {
+                                                for (int n=0; n<HUMAN_MAX; n++) {
                                                       if (newTarget[0] == human[n].x && newTarget[2] == human[n].z) {
                                                             if (human[n].targeted < 0){
                                                                   alien[i].target = n;
                                                                   alien[i].state = MOVEDOWN;
                                                                   human[n].targeted = i;
                                                             }
+                                                            break;
                                                       }
                                                 }
                                                 break;
                                           }
                                           if (world[(int) alien[i].x - j][y][(int) alien[i].z + k] == 1) {
                                                 int newTarget[3] = { (int) alien[i].x - j, y, (int) alien[i].z + k };
-                                                for (int n=0; n<6; n++) {
+                                                for (int n=0; n<HUMAN_MAX; n++) {
                                                       if (newTarget[0] == human[n].x && newTarget[2] == human[n].z) {
                                                             if (human[n].targeted < 0){
                                                                   alien[i].target = n;
                                                                   alien[i].state = MOVEDOWN;
                                                                   human[n].targeted = i;
                                                             }
+                                                            break;
                                                       }
                                                 }
                                                 break;
                                           }
                                           if (world[(int) alien[i].x - j][y][(int) alien[i].z - k] == 1){
                                                 int newTarget[3] = { (int) alien[i].x - j, y, (int) alien[i].z - k };
-                                                for (int n=0; n<6; n++) {
+                                                for (int n=0; n<HUMAN_MAX; n++) {
                                                       if (newTarget[0] == human[n].x && newTarget[2] == human[n].z) {
                                                             if (human[n].targeted < 0){
                                                                   alien[i].target = n;
                                                                   alien[i].state = MOVEDOWN;
                                                                   human[n].targeted = i;
                                                             }
+                                                            break;
                                                       }
                                                 }
                                                 break;
@@ -681,6 +735,55 @@ void alienControl () {
                         break;
                   }
                   case END: {
+                        break;
+                  }
+                  case AVOID: {
+                        switch (alien[i].previous) {
+                              case SEARCH: {
+                                    if (alien[i].avoidCount == AVOID_MAX) {
+                                          alien[i].vecx = -(alien[i].vecx);
+                                          alien[i].vecz = -(alien[i].vecz);
+                                    }
+                                    // switch direction at edge of world
+                                    if (alien[i].x + alien[i].vecx > 97.0 || alien[i].x + alien[i].vecx < 2.0) alien[i].vecx = -(alien[i].vecx);
+                                    if (alien[i].z + alien[i].vecz > 97.0 || alien[i].z + alien[i].vecz < 2.0) alien[i].vecz = -(alien[i].vecz);
+                                    // move alien
+                                    clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    alien[i].x += alien[i].vecx;
+                                    alien[i].z += alien[i].vecz;
+                                    drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    break;
+                              }
+                              case MOVEDOWN: {
+                                    clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    alien[i].y += 0.15;
+                                    drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    break;
+                              }
+                              case MOVEUP: {
+                                    clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    alien[i].y -= 0.15;
+                                    drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    break;
+                              }
+                              default: {
+                                    printf("what have i done\n");
+                                    printf("%d\n", alien[i].previous);
+                                    break;
+                              }
+                        }
+
+                        if (alien[i].avoidCount != 0) alien[i].avoidCount--;
+                        else alien[i].state = alien[i].previous;
+                        break;
+                  }
+                  case GROUND: {
+                        clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                        alien[i].y += 0.15;
+                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+
+                        if (alien[i].avoidCount != 0) alien[i].avoidCount--;
+                        else alien[i].state = alien[i].previous;
                         break;
                   }
             }
@@ -887,7 +990,7 @@ float x, y, z;
       if (tick < 15) tick++;
       else tick = 0;
       if (tick == 0) {
-            for (int i=0; i<6; i++) {
+            for (int i=0; i<HUMAN_MAX; i++) {
                   // apply gravity
                   if (human[i].targeted < 0 && human[i].dead != 1 && world[human[i].x][human[i].y-1][human[i].z] != 9) {
                         world[human[i].x][human[i].y-1][human[i].z] = 7;
@@ -924,7 +1027,7 @@ float x, y, z;
       if (beamTick > 0) {
             beamTick--;
             if (beamTick == 0) {
-                  for (int i=1; i<=8; i++)
+                  for (int i=1; i<=BEAM_MAX; i++)
                         hideTube(i);
             }
       }
@@ -967,7 +1070,7 @@ void mouse(int button, int state, int x, int y) {
       // printf("------------\n");
 
       /* creates blue beam */
-      for (int i=0; i<8; i++) {
+      for (int i=0; i<BEAM_MAX; i++) {
             createTube(i+1, 
             start[0] + i*dir[0], 
             start[1] + i*dir[1], 
@@ -978,7 +1081,7 @@ void mouse(int button, int state, int x, int y) {
             2);
       }
       // beam collision
-      for (int i=1; i<=8; i++) {
+      for (int i=1; i<=BEAM_MAX; i++) {
             float end[3];
             getTubeEnd(i, &end[0], &end[1], &end[2]);
             // beam collision with ALIEN
@@ -986,7 +1089,7 @@ void mouse(int button, int state, int x, int y) {
                   if (state == GLUT_UP) {
                         printf("Alien killed\n");
                         // set alien to DEAD
-                        for (int j=0; j<3; j++) {
+                        for (int j=0; j<ALIEN_MAX; j++) {
                               if (fabs(end[0] - alien[j].x) < 2 && fabs(end[1] - alien[j].y) < 2 && fabs(end[2] - alien[j].z) < 2) 
                                     alien[j].state = DEAD;
                         }
@@ -997,7 +1100,7 @@ void mouse(int button, int state, int x, int y) {
             if (world[(int)end[0]][(int)end[1]][(int)end[2]] == 1 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 3 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 7) {
                   if (state == GLUT_UP) {
                         printf("Human was lost\n");
-                        for (int j=0; j<6; j++) {
+                        for (int j=0; j<HUMAN_MAX; j++) {
                               if ((int)end[0] == human[j].x && (int)end[2] == human[j].z) {
                                     // set alien to SEARCH
                                     if (human[j].targeted > -1) {
@@ -1135,10 +1238,12 @@ int i, j, k;
       createHuman(3, 80, 10, 35);
       createHuman(4, 72, 10, 56);
       createHuman(5, 38, 10, 10);
+      createHuman(6, 63, 10, 40);
+      createHuman(7, 61, 10, 42);
 
       // init aliens
       srand(time(NULL));   // Initialization, should only be called once.
-      for (int i=0; i<3; i++) {
+      for (int i=0; i<ALIEN_MAX; i++) {
             alien[i].state = INIT;
       }
    }
