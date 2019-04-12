@@ -107,9 +107,9 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 #define DECEL_RATE 0.9 // deceleration rate
 #define VLIM 0.3 // max velocity limit
 #define ALIEN_MAX 8 // number of aliens
-#define HUMAN_MAX 8
-#define BEAM_MAX 15
-#define AVOID_MAX 12
+#define HUMAN_MAX 8 // number of humans
+#define BEAM_MAX 15 // beam length
+#define AVOID_MAX 12 // animation length
 
 struct timeval oldTime;
 int updateTime = -1;
@@ -141,24 +141,17 @@ typedef struct Human {
 Alien alien[ALIEN_MAX];
 Human human[HUMAN_MAX];
 
-      /*** collisionResponse() ***/
-      /* -performs collision detection and response */
-      /*  sets new xyz  to position of the viewpoint after collision */
-      /* -can also be used to implement gravity by updating y position of vp*/
-      /* note that the world coordinates returned from getViewPosition()
-      will be the negative value of the array indices */
+/*** collisionResponse() ***/
+/* -performs collision detection and response */
+/*  sets new xyz  to position of the viewpoint after collision */
 
 void collisionResponse() {
-
-	/* your code for collisions goes here */
 
       float newVP[3];
       getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
 
       float oldVP[3];
       getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
-
-      // float farVP[3];
 
       // Collision with world boundary
       if (newVP[0] < -99.9 || newVP[0] > 0.0) {
@@ -189,18 +182,11 @@ void collisionResponse() {
 }
 
 
-	/******* draw2D() *******/
-	/* draws 2D shapes on screen */
-	/* use the following functions: 			*/
-	/*	draw2Dline(int, int, int, int, int);		*/
-	/*	draw2Dbox(int, int, int, int);			*/
-	/*	draw2Dtriangle(int, int, int, int, int, int);	*/
-	/*	set2Dcolour(float []); 				*/
-	/* colour must be set before other functions are called	*/
+/******* draw2D() *******/
+/* draws 2D shapes on screen */
 void draw2D() {
 
    if (testWorld) {
-		/* draw some sample 2d shapes */
       if (displayMap == 1) {
          GLfloat green[] = {0.0, 0.5, 0.0, 0.5};
          set2Dcolour(green);
@@ -212,7 +198,6 @@ void draw2D() {
          draw2Dbox(500, 380, 524, 388);
       }
    } else {
-	/* your code goes here */
       GLfloat pink[] = {1.0, 0.3, 0.5, 1.5};
       GLfloat black[] = {0.0, 0.0, 0.0, 0.7};
       GLfloat green[] = {0.0, 0.5, 0.0, 1.5};
@@ -233,17 +218,12 @@ void draw2D() {
             float mWidth = x2-x1;
             float mHeight = y1-y2;
             int humanCount = 0;
-
-            // printf("outline: (%f,%f,%f,%f)\n",x1,y1,x2,y2);
-            // printf("map: (%f,%f)\n",mWidth,mHeight);
             
             // player icon
             float oldVP[3]; // old viewposition
             getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
 
             float px = (( (float) WORLDX - fabs(oldVP[0]) ) / (float) WORLDX) * mWidth;
-            // float pz = (( (float) WORLDZ - fabs(oldVP[2]) ) / (float) WORLDZ) * mHeight;
-            // float px = (( fabs(oldVP[0]) ) / (float) WORLDX) * mWidth;
             float pz = (( fabs(oldVP[2]) ) / (float) WORLDZ) * mHeight;
             float player[2] = { x1+px , y2+pz };
             float ax, ay, bx, by, cx, cy;
@@ -253,9 +233,7 @@ void draw2D() {
             by = player[1] - 0.03 * scale;
             ax = player[0] + 0.03 * scale;
             ay = player[1] - 0.03 * scale;
-            // printf("triangle\na:[%f][%f]\nb: [%f][%f]\nc: [%f][%f]\n", ax, ay, bx, by, cx, cy);
             set2Dcolour(red);
-            // draw2Dbox(x1+px+0.04*scale, y2+pz-0.04*scale, x1+px-0.04*scale, y2+pz+0.04*scale);
             draw2Dtriangle(ax, ay, bx, by, cx, cy);
 
             // beam (ray)
@@ -272,7 +250,6 @@ void draw2D() {
                         float mstarty = (bz / (float) WORLDZ) * mHeight;
                         float mendx = (((float) WORLDX - ex)  / (float) WORLDX) * mWidth;
                         float mendy = (ez / (float) WORLDZ) * mHeight;
-                        // printf("beam\nstart:[%f][%f]\nend:[%f][%f]\n", x1+mstartx, y2+mstarty, x1+mendx, y2+mendy);
                         // draw
                         set2Dcolour(blue);
                         draw2Dline(x1+mstartx, y2+mstarty, x1+mendx, y2+mendy, (int)(scale*0.02));
@@ -286,15 +263,11 @@ void draw2D() {
                               if (world[x][y][z] == 12) {
                                     // Human
                                     float px = ((float) (WORLDX-x) / (float) WORLDX) * mWidth;
-                                    // float pz = ((float) (WORLDZ-z) / (float) WORLDZ) * mHeight;
-                                    // float px = ((float) (x) / (float) WORLDX) * mWidth;
                                     float pz = ((float) (z) / (float) WORLDZ) * mHeight;
-                                    // printf("pxpz: (%f,%f)\n",px,pz);
                                     set2Dcolour(yellow);
                                     draw2Dbox(x1+px+0.01*scale, y2+pz-0.01*scale, x1+px-0.01*scale, y2+pz+0.01*scale);
                                     set2Dcolour(forest);
                                     draw2Dbox(x1+px+0.025*scale, y2+pz-0.025*scale, x1+px-0.025*scale, y2+pz+0.025*scale);
-                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
                                     humanCount++;
                                     break;
                               }
@@ -309,13 +282,9 @@ void draw2D() {
                               if (world[x][y][z] == 1) {
                                     // Human
                                     float px = ((float) (WORLDX-x) / (float) WORLDX) * mWidth;
-                                    // float pz = ((float) (WORLDZ-z) / (float) WORLDZ) * mHeight;
-                                    // float px = ((float) (x) / (float) WORLDX) * mWidth;
                                     float pz = ((float) (z) / (float) WORLDZ) * mHeight;
-                                    // printf("pxpz: (%f,%f)\n",px,pz);
                                     set2Dcolour(green);
                                     draw2Dbox(x1+px+0.01*scale, y2+pz-0.01*scale, x1+px-0.01*scale, y2+pz+0.01*scale);
-                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
                                     humanCount++;
                                     break;
                               }
@@ -336,17 +305,12 @@ void draw2D() {
             float mWidth = x2-x1;
             float mHeight = y1-y2;
             int humanCount = 0;
-
-            // printf("outline: (%f,%f,%f,%f)\n",x1,y1,x2,y2);
-            // printf("map: (%f,%f)\n",mWidth,mHeight);
             
             // player icon
             float oldVP[3]; // old viewposition
             getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
 
             float px = (( (float) WORLDX - fabs(oldVP[0]) ) / (float) WORLDX) * mWidth;
-            // float pz = (( (float) WORLDZ - fabs(oldVP[2]) ) / (float) WORLDZ) * mHeight;
-            // float px = (( fabs(oldVP[0]) ) / (float) WORLDX) * mWidth;
             float pz = (( fabs(oldVP[2]) ) / (float) WORLDZ) * mHeight;
             float player[2] = { x1+px , y2+pz };
             float ax, ay, bx, by, cx, cy;
@@ -356,10 +320,7 @@ void draw2D() {
             by = player[1] - 0.06 * scale;
             ax = player[0] + 0.06 * scale;
             ay = player[1] - 0.06 * scale;
-            // printf("scale %f", scale);
-            // printf("triangle\na:[%f][%f]\nb: [%f][%f]\nc: [%f][%f]\n", ax, ay, bx, by, cx, cy);
             set2Dcolour(red);
-            // draw2Dbox(x1+px+0.04*scale, y2+pz-0.04*scale, x1+px-0.04*scale, y2+pz+0.04*scale);
             draw2Dtriangle(ax, ay, bx, by, cx, cy);
 
             // beam (ray)
@@ -389,15 +350,11 @@ void draw2D() {
                               if (world[x][y][z] == 12) {
                                     // Human
                                     float px = ((float) (WORLDX-x) / (float) WORLDX) * mWidth;
-                                    // float pz = ((float) (WORLDZ-z) / (float) WORLDZ) * mHeight;
-                                    // float px = ((float) (x) / (float) WORLDX) * mWidth;
                                     float pz = ((float) (z) / (float) WORLDZ) * mHeight;
-                                    // printf("pxpz: (%f,%f)\n",px,pz);
                                     set2Dcolour(yellow);
                                     draw2Dbox(x1+px+0.03*scale, y2+pz-0.03*scale, x1+px-0.03*scale, y2+pz+0.03*scale);
                                     set2Dcolour(forest);
                                     draw2Dbox(x1+px+0.075*scale, y2+pz-0.075*scale, x1+px-0.075*scale, y2+pz+0.075*scale);
-                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
                                     humanCount++;
                                     break;
                               }
@@ -412,13 +369,9 @@ void draw2D() {
                               if (world[x][y][z] == 1) {
                                     // Human
                                     float px = ((float) (WORLDX-x) / (float) WORLDX) * mWidth;
-                                    // float pz = ((float) (WORLDZ-z) / (float) WORLDZ) * mHeight;
-                                    // float px = ((float) (x) / (float) WORLDX) * mWidth;
                                     float pz = ((float) (z) / (float) WORLDZ) * mHeight;
-                                    // printf("pxpz: (%f,%f)\n",px,pz);
                                     set2Dcolour(green);
                                     draw2Dbox(x1+px+0.03*scale, y2+pz-0.03*scale, x1+px-0.03*scale, y2+pz+0.03*scale);
-                                    // printf("hooman: (%f,%f)\n", x1+px, y2+pz-2);
                                     humanCount++;
                                     break;
                               }
@@ -481,7 +434,6 @@ void clearAlien(int x, int y, int z) {
       // top
       world[x][y+1][z] = 0;
       // middle
-      // world[x][y][z] = 1;
       world[x][y][z+1] = 0;
       world[x][y][z-1] = 0;
       world[x+1][y][z] = 0;
@@ -502,7 +454,6 @@ void drawAlien(int x, int y, int z) {
       // top
       world[x][y+1][z] = 12;
       // middle
-      // world[x][y][z] = 1;
       world[x][y][z+1] = 11;
       world[x][y][z-1] = 11;
       world[x+1][y][z] = 11;
@@ -524,7 +475,6 @@ void alienCollision(int a) {
             for (int j=-3; j<=3; j++) {
                   for (int k=-3; k<=3; k++) {
                         for (int l=0; l<ALIEN_MAX; l++) {
-                              // if (i == 0 && j == 0 && ) continue;
                               if (l == a) continue;
                               if ((int) alien[a].x + i == (int) alien[l].x && (int) alien[a].y + j == (int) alien[l].y && (int) alien[a].z + k == (int) alien[l].z) {
                                     if (alien[a].state != AVOID) alien[a].previous = alien[a].state;
@@ -670,9 +620,6 @@ void alienControl () {
                   }
                   case MOVEDOWN: {
                         // check if target moved
-                        // if (world[human[alien[i].target].x][human[alien[i].target].y+2][human[alien[i].target].z] == 0) {
-                        //       alien[i].target[1] -= 1;
-                        // }
                         clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
                         alien[i].downFactor = 0.1 / sqrtf(
                               powf(human[alien[i].target].x - alien[i].x, 2) + 
@@ -790,18 +737,14 @@ void alienControl () {
       }
 }
 
-	/*** update() ***/
-	/* background process, it is called when there are no other events */
-	/* -used to control animations and perform calculations while the  */
-	/*  system is running */
-	/* -gravity must also implemented here, duplicate collisionResponse */
+/*** update() ***/
+/* background process, it is called when there are no other events */
 void update() {
 int i, j, k;
 float *la;
 float x, y, z;
 
-	/* sample animation for the test world, don't remove this code */
-	/* demo of animating mobs */
+	/* sample animation for the test world */
    if (testWorld) {
 
 
@@ -874,8 +817,6 @@ float x, y, z;
     /* end testworld animation */
 
    } else {
-	/* your code goes here */
-
       //////////////// TIMING ////////////////
       struct timeval newTime;
       gettimeofday(&newTime, NULL);
@@ -912,17 +853,12 @@ float x, y, z;
             }
       }
 
-      // printf("DEBUG\n");
-      // printf("oldVP1[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
-      // printf("newVP1[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
-
       // check if moving
       int moving;
       isMoving(&moving);
      
       if (moving == 0) {
             // NOT MOVING
-            // printf("Not moving\n");
             // calculate deceleration amount
             for (int i=0; i<3; i++) {
                   newMvt[i] = oldMvt[i] * DECEL_RATE; // deceleration factor
@@ -932,7 +868,6 @@ float x, y, z;
       }
       else {
             // MOVING
-            // printf("Moving\n");
             char newD;
             getCurrentDirection(&newD);
       
@@ -944,19 +879,12 @@ float x, y, z;
                   else {
                         newMvt[i] = (newVP[i] - oldVP[i]) * 0.8;                            
                   }
-                  // newMvt[i] = (newVP[i] - oldVP[i]) * 0.05 + (oldMvt[i] * ACCEL_RATE);
             }
 
             if (newD != direction) {
                   direction = newD;
             }
       }
-
-      // limit(&newMvt[0], &newMvt[1], &newMvt[2]);
-
-      // printf("oldMvt[%f][%f][%f]\n", oldMvt[0], oldMvt[1], oldMvt[2]); // debug
-      // printf("newMvt[%f][%f][%f]\n", newMvt[0], newMvt[1], newMvt[2]); // debug
-
       // store movement size
       for (int i=0; i<3; i++) {
             oldMvt[i] = newMvt[i];
@@ -979,9 +907,6 @@ float x, y, z;
 
       getViewPosition(&newVP[0], &newVP[1], &newVP[2]);
       getOldViewPosition(&newVP[0], &newVP[1], &newVP[2]);
-      // printf("oldVP2[%f][%f][%f]\n", oldVP[0], oldVP[1], oldVP[2]); // debug
-      // printf("newVP2[%f][%f][%f]\n", newVP[0], newVP[1], newVP[2]); // debug
-      // printf("---------------------------------------------\n");    // debug
 
       // alien
       alienControl();
@@ -1035,11 +960,7 @@ float x, y, z;
 }
 
 
-	/* called by GLUT when a mouse button is pressed or released */
-	/* -button indicates which button was pressed or released */
-	/* -state indicates a button down or button up event */
-	/* -x,y are the screen coordinates when the mouse is pressed or */
-	/*  released */ 
+/* called by GLUT when a mouse button is pressed or released */
 void mouse(int button, int state, int x, int y) {
 
    if (button == GLUT_LEFT_BUTTON) {
@@ -1049,25 +970,16 @@ void mouse(int button, int state, int x, int y) {
       for (int i=0; i<3; i++) {
             VO[i] = fmod(VO[i], 360);
       }
-      // printf("ViewOrientation (%f, %f, %f)\n", VO[0], VO[1], VO[2]);
+
       float dir[3];
       float val = M_PI / 180.0;
       dir[0] = sin(VO[1] * val);
       dir[1] = -sin(VO[0] * val);
       dir[2] = -cos(VO[1] * val);
-      // printf("ViewRadians (%f, %f)\n", VO[0] * val, VO[1] * val);
-      // printf("ViewDirection (%f, %f, %f)\n", dir[0], dir[1], dir[2]);
+
       float start[3]; // start of beam
       getViewPosition(&start[0], &start[1], &start[2]);
       for (int i=0; i<3; i++) start[i] = fabs(start[i]);
-
-      // float end[3]; // end of beam
-      // for (int i=0; i<3; i++) end[i] = start[i] + 4*dir[i];
-      // printf("------------\n");
-      // printf("start (%f, %f, %f)\n", start[0], start[1], start[2]);
-      // printf("dir (%f, %f, %f)\n", dir[0], dir[1], dir[2]);
-      // printf("end (%f, %f, %f)\n", end[0], end[1], end[2]);
-      // printf("------------\n");
 
       /* creates blue beam */
       for (int i=0; i<BEAM_MAX; i++) {
@@ -1122,17 +1034,6 @@ void mouse(int button, int state, int x, int y) {
       }
       beamTick = 8;
    }
-//    else if (button == GLUT_MIDDLE_BUTTON)
-//       printf("middle button - ");   
-//    else
-//       printf("right button - ");
-
-//    if (state == GLUT_UP)
-//       printf("up - ");
-//    else
-//       printf("down - ");
-
-//    printf("%d %d\n", x, y);
 }
 
 void createHuman(int number, int x, int y, int z) {
@@ -1154,12 +1055,6 @@ int i, j, k;
 	/* initialize the graphics system */
    graphicsInit(&argc, argv);
 
-	/* the first part of this if statement builds a sample */
-	/* world which will be used for testing */
-	/* DO NOT remove this code. */
-	/* Put your code in the else statment below */
-	/* The testworld is only guaranteed to work with a world of
-		with dimensions of 100,50,100. */
    if (testWorld == 1) {
 	/* initialize world to empty */
       for(i=0; i<WORLDX; i++)
@@ -1204,7 +1099,6 @@ int i, j, k;
 	/* create sample player */
       createPlayer(0, 52.0, 27.0, 52.0, 0.0);
    } else {
-	/* your code to build the world goes here */
       setUserColour(9, 0.7, 0.3, 0.7, 1.0, 0.3, 0.15, 0.3, 1.0);
       setUserColour(10, 0.5, 0.5, 0.5, 1.0, 0.2, 0.2, 0.2, 1.0);
       setUserColour(11, 0.0, 0.5, 0.0, 1.0, 0.0, 0.5, 0.0, 1.0);
@@ -1249,8 +1143,8 @@ int i, j, k;
    }
 
 
-	/* starts the graphics processing loop */
-	/* code after this will not run until the program exits */
+      /* starts the graphics processing loop */
+      /* code after this will not run until the program exits */
    glutMainLoop();
    return 0; 
 }
