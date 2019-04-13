@@ -106,10 +106,10 @@ extern void getUserColour(int, GLfloat *, GLfloat *, GLfloat *, GLfloat *,
 #define ACCEL_RATE 1.15 // acceleration rate
 #define DECEL_RATE 0.9 // deceleration rate
 #define VLIM 0.3 // max velocity limit
-#define ALIEN_MAX 8 // number of aliens
+#define ALIEN_MAX 12 // number of aliens
 #define HUMAN_MAX 8 // number of humans
-#define BEAM_MAX 15 // beam length
-#define AVOID_MAX 12 // animation length
+#define BEAM_MAX 30 // player beam length
+#define AVOID_MAX 32 // animation length
 
 struct timeval oldTime;
 int updateTime = -1;
@@ -120,7 +120,7 @@ int tick = 0; // gravity tick
 int first = 1;
 float accel = 0.0;
 int direction = ' ';
-enum { INIT, SEARCH, MOVEDOWN, MOVEUP, SUCCESS, DEAD , END, AVOID, GROUND };
+enum { INIT, SEARCH, MOVEDOWN, MOVEUP, SUCCESS, DEAD , END, AVOID, GROUND, FIGHT, SHOOT };
 
 typedef struct Alien {
       int state;
@@ -129,6 +129,8 @@ typedef struct Alien {
       float vecx, vecz;
       int target;
       float downFactor;
+      int beamTick;
+      int color;
 } Alien;
 
 typedef struct Human {
@@ -152,6 +154,8 @@ void collisionResponse() {
 
       float oldVP[3];
       getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
+
+      // float farVP[3];
 
       // Collision with world boundary
       if (newVP[0] < -99.9 || newVP[0] > 0.0) {
@@ -450,24 +454,24 @@ void clearAlien(int x, int y, int z) {
       world[x-1][y-1][z+1] = 0;
 }
 
-void drawAlien(int x, int y, int z) {
+void drawAlien(int x, int y, int z, int color) {
       // top
       world[x][y+1][z] = 12;
       // middle
-      world[x][y][z+1] = 11;
-      world[x][y][z-1] = 11;
-      world[x+1][y][z] = 11;
-      world[x-1][y][z] = 11;
+      world[x][y][z+1] = color;
+      world[x][y][z-1] = color;
+      world[x+1][y][z] = color;
+      world[x-1][y][z] = color;
 
-      world[x+1][y][z-1] = 11;
-      world[x+1][y][z+1] = 11;
-      world[x-1][y][z-1] = 11;
-      world[x-1][y][z+1] = 11;
+      world[x+1][y][z-1] = color;
+      world[x+1][y][z+1] = color;
+      world[x-1][y][z-1] = color;
+      world[x-1][y][z+1] = color;
       // bottom
-      world[x+1][y-1][z-1] = 11;
-      world[x+1][y-1][z+1] = 11;
-      world[x-1][y-1][z-1] = 11;
-      world[x-1][y-1][z+1] = 11;
+      world[x+1][y-1][z-1] = color;
+      world[x+1][y-1][z+1] = color;
+      world[x-1][y-1][z-1] = color;
+      world[x-1][y-1][z+1] = color;
 }
 
 void alienCollision(int a) {
@@ -477,7 +481,7 @@ void alienCollision(int a) {
                         for (int l=0; l<ALIEN_MAX; l++) {
                               if (l == a) continue;
                               if ((int) alien[a].x + i == (int) alien[l].x && (int) alien[a].y + j == (int) alien[l].y && (int) alien[a].z + k == (int) alien[l].z) {
-                                    if (alien[a].state != AVOID) alien[a].previous = alien[a].state;
+                                    alien[a].previous = alien[a].state;
                                     alien[a].state = AVOID;
                                     alien[a].avoidCount = AVOID_MAX;
                                     return;
@@ -490,10 +494,11 @@ void alienCollision(int a) {
 }
 
 void groundCollision(int a) {
-      for (int i=-3; i<=3; i++) {
-            for (int j=-3; j<=3; j++) {
-                  for (int k=-3; k<=3; k++) {
+      for (int i=-2; i<=2; i++) {
+            for (int j=-2; j<0; j++) {
+                  for (int k=-2; k<=2; k++) {
                         if (world[(int) alien[a].x + i][(int) alien[a].y + j][(int) alien[a].z + k] == 9) {
+                              alien[a].previous = alien[a].state;
                               alien[a].state = GROUND;
                               alien[a].avoidCount = AVOID_MAX;
                               return;
@@ -508,20 +513,34 @@ void groundCollision(int a) {
 void alienControl () {
       // alien collision check
       for (int i=0; i<ALIEN_MAX; i++) {
-            if (alien[i].state == SEARCH || alien[i].state == MOVEDOWN || alien[i].state == MOVEUP)
+            if (alien[i].state == SEARCH || alien[i].state == MOVEDOWN || alien[i].state == MOVEUP || alien[i].state == FIGHT || alien[i].state == SHOOT)
                   if (alien[i].avoidCount == 0)  
                         alienCollision(i);
       }
       // ground collision check
+      for (int i=0; i<ALIEN_MAX; i++) {
+            if (alien[i].state == SEARCH || alien[i].state == MOVEDOWN || alien[i].state == MOVEUP)
+                  if (alien[i].avoidCount == 0)  
+                        groundCollision(i);
+      }
       // state machine
       for (int i=0; i<ALIEN_MAX; i++) {
             switch (alien[i].state) {
                   case INIT: {
+                        // set color to alien green
+                        alien[i].color = 11;
                         // generate init position
-                        alien[i].x = (float) (rand() % 80 + 10); // pseudo-random x coordinate
+                        while(1) {
+                              int flag = 0;
+                              alien[i].x = (float) (rand() % 80 + 10); // pseudo-random x coordinate
+                              alien[i].z = (float) (rand() % 80 + 10); // pseudo-random z coordinate
+                              for (int j=i-1; j>=0; j--) {
+                                    if (fabs(alien[i].x - alien[j].x) < 6 && fabs(alien[i].z - alien[j].z) < 6) flag = 1;
+                              }
+                              if (flag == 0) break;
+                        }
                         alien[i].y = 40.0;
-                        alien[i].z = (float) (rand() % 80 + 10); // pseudo-random z coordinate
-                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
                         // initialize movement velocity
                         alien[i].vecx = ((float) rand() / (float) (RAND_MAX)) * 0.15 + 0.05;
                         alien[i].vecz = ((float) rand() / (float) (RAND_MAX)) * 0.15 + 0.05;
@@ -531,6 +550,8 @@ void alienControl () {
                         alien[i].state = SEARCH;
                         // avoid animation counter
                         alien[i].avoidCount = 0;
+                        // init beam tick
+                        alien[i].beamTick = 0;
                         break;
                   }
                   case SEARCH: {
@@ -551,11 +572,12 @@ void alienControl () {
                               alien[i].x  += alien[i].vecx;
                               alien[i].z  += alien[i].vecz;
                         }
-                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
                         // look for available humans
+                        int flag = 0;
                         for (int j=0; j<8; j++) {
                               for (int k=0; k<8-i; k++) {
-                                    for (int y=5; y<15; y++) {
+                                    for (int y=2; y<12; y++) {
                                           if (world[(int) alien[i].x + j][y][(int) alien[i].z + k] == 1) {
                                                 // check if targeted
                                                 int newTarget[3] = { (int) alien[i].x + j, y, (int) alien[i].z + k };
@@ -565,6 +587,7 @@ void alienControl () {
                                                                   alien[i].target = n;
                                                                   alien[i].state = MOVEDOWN;
                                                                   human[n].targeted = i;
+                                                                  flag = 1;
                                                             }
                                                             break;
                                                       }
@@ -579,6 +602,7 @@ void alienControl () {
                                                                   alien[i].target = n;
                                                                   alien[i].state = MOVEDOWN;
                                                                   human[n].targeted = i;
+                                                                  flag = 1;
                                                             }
                                                             break;
                                                       }
@@ -593,6 +617,7 @@ void alienControl () {
                                                                   alien[i].target = n;
                                                                   alien[i].state = MOVEDOWN;
                                                                   human[n].targeted = i;
+                                                                  flag = 1;
                                                             }
                                                             break;
                                                       }
@@ -607,6 +632,7 @@ void alienControl () {
                                                                   alien[i].target = n;
                                                                   alien[i].state = MOVEDOWN;
                                                                   human[n].targeted = i;
+                                                                  flag = 1;
                                                             }
                                                             break;
                                                       }
@@ -614,7 +640,9 @@ void alienControl () {
                                                 break;
                                           }
                                     }
+                                    if (flag == 1) break;
                               }
+                              if (flag == 1) break;
                         }
                         break;
                   }
@@ -629,14 +657,14 @@ void alienControl () {
                         alien[i].x  += (human[alien[i].target].x - alien[i].x) * alien[i].downFactor;
                         alien[i].y  += (human[alien[i].target].y+4 - alien[i].y) * alien[i].downFactor;
                         alien[i].z  += (human[alien[i].target].z - alien[i].z) * alien[i].downFactor;
-                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
 
                         if (sqrtf(powf(human[alien[i].target].x - alien[i].x, 2) + powf(human[alien[i].target].y+4 - alien[i].y, 2) + powf(human[alien[i].target].z - alien[i].z, 2)) < 0.1) {
                               clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
                               alien[i].x  = human[alien[i].target].x;
                               alien[i].y  = human[alien[i].target].y+4;
                               alien[i].z  = human[alien[i].target].z;
-                              drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                              drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
                         }
 
                         if ((int) alien[i].x == human[alien[i].target].x && (int) alien[i].y == human[alien[i].target].y+4 && (int) alien[i].z == human[alien[i].target].z)
@@ -647,7 +675,7 @@ void alienControl () {
                         // move alien
                         clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
                         alien[i].y  += 0.04;
-                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
                         // move human
                         world[(int) alien[i].x][(int) alien[i].y-2][(int) alien[i].z] = 1;
                         world[(int) alien[i].x][(int) alien[i].y-3][(int) alien[i].z] = 3;
@@ -665,11 +693,13 @@ void alienControl () {
                         world[(int) alien[i].x][(int) alien[i].y-2][(int) alien[i].z] = 0;
                         world[(int) alien[i].x][(int) alien[i].y-3][(int) alien[i].z] = 0;
                         world[(int) alien[i].x][(int) alien[i].y-4][(int) alien[i].z] = 0;
+                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
                         // printf("Alien escaped\n");
                         printf("Human was lost\n");
                         human[alien[i].target].targeted = -1;
                         human[alien[i].target].dead = 1;
-                        alien[i].state = END;
+                        alien[i].color = 13;
+                        alien[i].state = FIGHT;
                         break;
                   }
                   case DEAD: {
@@ -686,7 +716,9 @@ void alienControl () {
                   }
                   case AVOID: {
                         switch (alien[i].previous) {
-                              case SEARCH: {
+                              case SEARCH:
+                              case FIGHT:
+                              case SHOOT: {
                                     if (alien[i].avoidCount == AVOID_MAX) {
                                           alien[i].vecx = -(alien[i].vecx);
                                           alien[i].vecz = -(alien[i].vecz);
@@ -698,19 +730,40 @@ void alienControl () {
                                     clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
                                     alien[i].x += alien[i].vecx;
                                     alien[i].z += alien[i].vecz;
-                                    drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
                                     break;
                               }
                               case MOVEDOWN: {
                                     clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    int flag = 0;
+                                    for (int m=-3; m<=3; m++) {
+                                          for (int j=-3; j<=3; j++) {
+                                                for (int k=-3; k<=3; k++) {
+                                                      for (int l=0; l<ALIEN_MAX; l++) {
+                                                            if (l == i) continue;
+                                                            if ((int) alien[i].x + m == (int) alien[l].x && (int) alien[i].y + j == (int) alien[l].y && (int) alien[i].z + k == (int) alien[l].z) {
+                                                                  if (alien[i].x < alien[l].x) alien[i].x -= 0.25;
+                                                                  else alien[i].x += 0.25;
+                                                                  if (alien[i].z < alien[l].z) alien[i].z -= 0.25;
+                                                                  else alien[i].z += 0.25;
+                                                                  flag = 1;
+                                                            }
+                                                            if (flag == 1) break;
+                                                      }
+                                                      if (flag == 1) break;
+                                                }
+                                                if (flag == 1) break;
+                                          }
+                                          if (flag == 1) break;
+                                    }
                                     alien[i].y += 0.15;
-                                    drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
                                     break;
                               }
                               case MOVEUP: {
                                     clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
                                     alien[i].y -= 0.15;
-                                    drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                                    drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
                                     break;
                               }
                               default: {
@@ -726,11 +779,70 @@ void alienControl () {
                   }
                   case GROUND: {
                         clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
-                        alien[i].y += 0.15;
-                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                        alien[i].y += 0.1;
+                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
 
                         if (alien[i].avoidCount != 0) alien[i].avoidCount--;
                         else alien[i].state = alien[i].previous;
+                        break;
+                  }
+                  case FIGHT: {
+                        // switch direction at edge of world
+                        if (alien[i].x + alien[i].vecx > 97.0 || alien[i].x + alien[i].vecx < 2.0) alien[i].vecx = -(alien[i].vecx);
+                        if (alien[i].z + alien[i].vecz > 97.0 || alien[i].z + alien[i].vecz < 2.0) alien[i].vecz = -(alien[i].vecz);
+                        // move alien
+                        clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                        alien[i].x  += alien[i].vecx;
+                        alien[i].z  += alien[i].vecz;
+                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
+
+                        float oldVP[3]; // old viewposition
+                        getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
+                        /* check for human in radius */
+                        if (fabs(alien[i].x - fabs(oldVP[0])) < 20 && fabs(alien[i].z - fabs(oldVP[2])) < 20) {
+                              alien[i].beamTick = 80;
+                              alien[i].state = SHOOT;
+                        }   
+                        break;
+                  }
+                  case SHOOT: {
+                        float oldVP[3]; // old viewposition
+                        getOldViewPosition(&oldVP[0], &oldVP[1], &oldVP[2]);
+                        // switch direction at edge of world
+                        if (alien[i].x + alien[i].vecx > 97.0 || alien[i].x + alien[i].vecx < 2.0) alien[i].vecx = -(alien[i].vecx);
+                        if (alien[i].z + alien[i].vecz > 97.0 || alien[i].z + alien[i].vecz < 2.0) alien[i].vecz = -(alien[i].vecz);
+                        // move alien
+                        clearAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z);
+                        alien[i].x  += alien[i].vecx;
+                        alien[i].z  += alien[i].vecz;
+                        drawAlien((int) alien[i].x, (int) alien[i].y, (int) alien[i].z, alien[i].color);
+                        // shoot beam after delay
+                        if (alien[i].beamTick == 40) {
+                              createTube(
+                                    (i+1) + BEAM_MAX + 1, 
+                                    floorf(alien[i].x), 
+                                    floorf(alien[i].y), 
+                                    floorf(alien[i].z), 
+                                    fabs(oldVP[0]), 
+                                    fabs(oldVP[1]), 
+                                    fabs(oldVP[2]), 
+                                    12
+                              );
+                              printf("Player has been hit\n");
+                        }
+                        else if (alien[i].beamTick == 0) {
+                              hideTube((i+1) + BEAM_MAX + 1);
+                              alien[i].state = FIGHT;
+                        }
+                        // check if human still in radius
+                        if (fabs(alien[i].x - fabs(oldVP[0])) < 20 && fabs(alien[i].z - fabs(oldVP[2])) < 20) {
+                              alien[i].beamTick--;
+                        }  
+                        else {
+                              if (alien[i].beamTick < 40) hideTube((i+1) + BEAM_MAX + 1);
+                              alien[i].beamTick = 0;
+                              alien[i].state = FIGHT;
+                        }
                         break;
                   }
             }
@@ -739,12 +851,14 @@ void alienControl () {
 
 /*** update() ***/
 /* background process, it is called when there are no other events */
+/* -used to control animations and perform calculations while the  */
+/*  system is running */
 void update() {
 int i, j, k;
 float *la;
 float x, y, z;
 
-	/* sample animation for the test world */
+	/* sample animation for the test world, don't remove this code */
    if (testWorld) {
 
 
@@ -823,11 +937,9 @@ float x, y, z;
 
       if (updateTime != -1) {
             unsigned long diff = (newTime.tv_sec - oldTime.tv_sec) * 1000000 + (newTime.tv_usec - oldTime.tv_usec);
-            // printf("%ld microseconds\n", diff);
 
             // Only run if last update over 16000 milliseconds
             if (diff > 16000) {
-                  // printf("update()\n");
                   oldTime = newTime;
             }
             else return;
@@ -885,6 +997,7 @@ float x, y, z;
                   direction = newD;
             }
       }
+
       // store movement size
       for (int i=0; i<3; i++) {
             oldMvt[i] = newMvt[i];
@@ -961,6 +1074,10 @@ float x, y, z;
 
 
 /* called by GLUT when a mouse button is pressed or released */
+/* -button indicates which button was pressed or released */
+/* -state indicates a button down or button up event */
+/* -x,y are the screen coordinates when the mouse is pressed or */
+/*  released */ 
 void mouse(int button, int state, int x, int y) {
 
    if (button == GLUT_LEFT_BUTTON) {
@@ -997,7 +1114,7 @@ void mouse(int button, int state, int x, int y) {
             float end[3];
             getTubeEnd(i, &end[0], &end[1], &end[2]);
             // beam collision with ALIEN
-            if (world[(int)end[0]][(int)end[1]][(int)end[2]] == 11 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 12) {
+            if (world[(int)end[0]][(int)end[1]][(int)end[2]] == 11 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 12 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 13) {
                   if (state == GLUT_UP) {
                         printf("Alien killed\n");
                         // set alien to DEAD
@@ -1011,7 +1128,6 @@ void mouse(int button, int state, int x, int y) {
             // beam collision with HUMAN
             if (world[(int)end[0]][(int)end[1]][(int)end[2]] == 1 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 3 || world[(int)end[0]][(int)end[1]][(int)end[2]] == 7) {
                   if (state == GLUT_UP) {
-                        printf("Human was lost\n");
                         for (int j=0; j<HUMAN_MAX; j++) {
                               if ((int)end[0] == human[j].x && (int)end[2] == human[j].z) {
                                     // set alien to SEARCH
@@ -1026,6 +1142,7 @@ void mouse(int button, int state, int x, int y) {
                                     }
                                     human[j].targeted = -1;
                                     human[j].dead = 1;
+                                    printf("Human was lost\n");
                               }
                         }
                         break;
@@ -1055,6 +1172,11 @@ int i, j, k;
 	/* initialize the graphics system */
    graphicsInit(&argc, argv);
 
+	/* the first part of this if statement builds a sample */
+	/* world which will be used for testing */
+	/* DO NOT remove this code. */
+	/* The testworld is only guaranteed to work with a world of
+		with dimensions of 100,50,100. */
    if (testWorld == 1) {
 	/* initialize world to empty */
       for(i=0; i<WORLDX; i++)
@@ -1099,10 +1221,11 @@ int i, j, k;
 	/* create sample player */
       createPlayer(0, 52.0, 27.0, 52.0, 0.0);
    } else {
-      setUserColour(9, 0.7, 0.3, 0.7, 1.0, 0.3, 0.15, 0.3, 1.0);
+      setUserColour(9, 0.7, 0.3, 0.7, 1.0, 0.3, 0.15, 0.3, 1.0); // ground purple
       setUserColour(10, 0.5, 0.5, 0.5, 1.0, 0.2, 0.2, 0.2, 1.0);
-      setUserColour(11, 0.0, 0.5, 0.0, 1.0, 0.0, 0.5, 0.0, 1.0);
-      setUserColour(12, 1.0, 1.0, 0.0, 1.0, 0.3, 0.3, 0.15, 1.0);
+      setUserColour(11, 0.0, 0.5, 0.0, 1.0, 0.0, 0.5, 0.0, 1.0); // alien green
+      setUserColour(12, 1.0, 1.0, 0.0, 1.0, 0.3, 0.3, 0.15, 1.0); // alien yellow
+      setUserColour(13, 0.4, 0.0, 0.0, 1.0, 0.4, 0.0, 0.0, 1.0); // alien red
       /* initialize world to empty */
       for(i=0; i<WORLDX; i++)
          for(j=0; j<WORLDY; j++)
@@ -1126,14 +1249,14 @@ int i, j, k;
       fclose(fp);
 
       /* create sample humans */
-      createHuman(0, 10, 10, 90);
-      createHuman(1, 60, 10, 40);
-      createHuman(2, 25, 10, 73);
-      createHuman(3, 80, 10, 35);
-      createHuman(4, 72, 10, 56);
-      createHuman(5, 38, 10, 10);
-      createHuman(6, 63, 10, 40);
-      createHuman(7, 61, 10, 42);
+      createHuman(0, 10, 2, 90);
+      createHuman(1, 60, 6, 40);
+      createHuman(2, 25, 5, 73);
+      createHuman(3, 80, 6, 35);
+      createHuman(4, 72, 6, 56);
+      createHuman(5, 38, 6, 10);
+      createHuman(6, 54, 7, 51);
+      createHuman(7, 52, 7, 51);
 
       // init aliens
       srand(time(NULL));   // Initialization, should only be called once.
@@ -1143,8 +1266,8 @@ int i, j, k;
    }
 
 
-      /* starts the graphics processing loop */
-      /* code after this will not run until the program exits */
+	/* starts the graphics processing loop */
+	/* code after this will not run until the program exits */
    glutMainLoop();
    return 0; 
 }
