@@ -7,3 +7,5 @@ A simple first-person 3D Alien Defense game built for MacOS in C using OpenGL an
 2. Navigate the the project folder with `cd 3D-Alien-Defense`
 3. Build with `make`
 4. Run with `./3Dgame`
+
+Run with argument `-help` to print a list of valid command line arguments
