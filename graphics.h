@@ -1,5 +1,9 @@
 
-#ifdef __APPLE__
+#ifdef LINUX
+#include <GL/glut.h>
+#endif
+
+#ifndef LINUX
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
 #include <GLUT/glut.h>

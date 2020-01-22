@@ -1236,7 +1236,7 @@ int i, j, k;
       FILE * fp;
       fp = fopen("ground.pgm", "r");
       if (fp == NULL) printf("File not found");
-      for (int i=0; i<4; i++) fscanf(fp, "%*[^\n]\n", NULL);
+      // for (int i=0; i<4; i++) fscanf(fp, "%*[^\n]\n", NULL);
       int input;
       for (int x=0; x<100; x++) {
             for (int z=0; z<100; z++) {
