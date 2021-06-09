@@ -1,5 +1,5 @@
 ## 3D Alien Defense Game
-A simple first-person 3D version of Space Invaders built for MacOS in C using OpenGL and GLUT. Generates a colorful  Minecraft-like world where you play as a flying hero trying to stop the Alien invaders from kidnapping the helpless humans. Try to stop the aliens before it's too late!
+A simple first-person 3D 'Space Invaders'-like game built for MacOS in C using OpenGL and GLUT. Generates a colorful  Minecraft-like world where you play as a flying hero trying to stop the Alien invaders from kidnapping the helpless humans. Try to stop the aliens before it's too late!
 
 ## Setup
 
